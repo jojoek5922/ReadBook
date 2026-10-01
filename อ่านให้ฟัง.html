@@ -1,0 +1,1958 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>อ่านให้ฟัง</title>
+<meta name="description" content="วางข้อความแล้วฟังทันที ด้วยเสียง Edge ฟรีไม่จำกัด หรือเสียง Gemini แบบเดียวกับ Google AI Studio">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Thai:wght@400;500;600&family=IBM+Plex+Sans+Thai+Looped:wght@400;500&family=Trirong:wght@600&display=swap">
+<style>
+/* Layout: the pasted text on the left (editor ⇄ reading view, a highlighter follows the sentence being spoken),
+   the voice console on the right, a player bar docked at the bottom. Blue ink + yellow highlighter on cool paper. */
+:root{
+  --bg:#F2F4F7;
+  --surface:#FFFFFF;
+  --surface-2:#EBEEF3;
+  --ink:#161A21;
+  --muted:#596271;
+  --line:#D8DDE5;
+  --accent:#2B45B5;
+  --accent-ink:#FFFFFF;
+  --accent-soft:#E2E7FA;
+  --mark:#FFE36B;
+  --mark-ink:#17150A;
+  --word:#FFB52E;
+  --done:#8A93A2;
+  --warn-bg:#FFF4DB; --warn-ink:#5C4000; --warn-line:#EAC46C;
+  --err-bg:#FCECEB; --err-ink:#861B1B; --err-line:#E8B0AC;
+  --ok:#14774A;
+  --shadow:0 1px 2px rgba(22,26,33,.05),0 12px 32px -16px rgba(22,26,33,.16);
+  --f-display:"Trirong","Leelawadee UI",Tahoma,serif;
+  --f-ui:"IBM Plex Sans Thai","Leelawadee UI","Segoe UI",Tahoma,system-ui,sans-serif;
+  --f-read:"IBM Plex Sans Thai Looped","IBM Plex Sans Thai","Leelawadee UI",Tahoma,sans-serif;
+  --f-mono:"IBM Plex Mono",Consolas,ui-monospace,monospace;
+  --r:12px;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0D1015; --surface:#151920; --surface-2:#1D222B; --ink:#E5E8EE; --muted:#98A1B0; --line:#2A303B;
+    --accent:#8C9EFF; --accent-ink:#0A0F2E; --accent-soft:#232B4F;
+    --mark:#5C4C0C; --mark-ink:#FFF3C2; --word:#9C730A; --done:#6C7586;
+    --warn-bg:#2B2410; --warn-ink:#F3D48C; --warn-line:#56461A;
+    --err-bg:#2D1515; --err-ink:#F4B2AD; --err-line:#5A2521;
+    --ok:#5ACD95;
+    --shadow:0 1px 2px rgba(0,0,0,.35),0 12px 32px -16px rgba(0,0,0,.6);
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0D1015; --surface:#151920; --surface-2:#1D222B; --ink:#E5E8EE; --muted:#98A1B0; --line:#2A303B;
+  --accent:#8C9EFF; --accent-ink:#0A0F2E; --accent-soft:#232B4F;
+  --mark:#5C4C0C; --mark-ink:#FFF3C2; --word:#9C730A; --done:#6C7586;
+  --warn-bg:#2B2410; --warn-ink:#F3D48C; --warn-line:#56461A;
+  --err-bg:#2D1515; --err-ink:#F4B2AD; --err-line:#5A2521;
+  --ok:#5ACD95;
+  --shadow:0 1px 2px rgba(0,0,0,.35),0 12px 32px -16px rgba(0,0,0,.6);
+  color-scheme:dark;
+}
+
+*,*::before,*::after{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.6 var(--f-ui);-webkit-font-smoothing:antialiased}
+[hidden]{display:none!important}
+a{color:var(--accent);text-underline-offset:2px}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+.wrap{max-width:1200px;margin:0 auto;padding-inline:20px;padding-block:22px 160px}
+
+/* header */
+.top{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px 28px;margin-bottom:18px}
+.brand h1{margin:0;font:600 clamp(28px,4vw,36px)/1.2 var(--f-display);text-wrap:balance}
+.brand h1 em{font-style:normal;padding:0 .08em;background:linear-gradient(transparent 56%,var(--mark) 56%,var(--mark) 90%,transparent 90%)}
+.brand p{margin:4px 0 0;color:var(--muted);max-width:62ch}
+.keys{display:flex;flex-wrap:wrap;gap:6px 16px;color:var(--muted);font-size:13px}
+.keys span{white-space:nowrap}
+kbd{display:inline-block;font:500 11.5px/1 var(--f-mono);padding:3px 6px;border:1px solid var(--line);border-bottom-width:2px;border-radius:5px;background:var(--surface);color:var(--ink)}
+
+.grid{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:20px;align-items:start}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);min-width:0}
+
+/* main: text */
+.toolbar{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 12px;padding:10px 12px;border-bottom:1px solid var(--line)}
+.toolbar .left{display:flex;flex-wrap:wrap;align-items:center;gap:6px}
+.meta{font:12.5px/1.4 var(--f-mono);color:var(--muted);font-variant-numeric:tabular-nums;padding-right:4px}
+.tag{font-size:12px;line-height:1.5;padding:1px 9px;border-radius:999px;background:var(--mark);color:var(--mark-ink)}
+.tbtn{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:6px 11px;font-size:14px;line-height:1.3;cursor:pointer;color:var(--ink);text-decoration:none}
+.tbtn:hover{background:var(--surface-2)}
+.tbtn:disabled{opacity:.45;cursor:not-allowed;background:var(--surface)}
+.tbtn svg{width:16px;height:16px;flex:none}
+.tbtn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.tbtn.primary:hover{background:var(--accent);filter:brightness(1.08)}
+
+#banner{padding:12px 12px 0}
+.banner{position:relative;display:grid;gap:8px;padding:10px 40px 10px 14px;border:1px solid;border-radius:9px;font-size:14px;line-height:1.55}
+.banner.info{background:var(--accent-soft);border-color:transparent;color:var(--ink)}
+.banner.warn{background:var(--warn-bg);border-color:var(--warn-line);color:var(--warn-ink)}
+.banner.err{background:var(--err-bg);border-color:var(--err-line);color:var(--err-ink)}
+.banner-acts{display:flex;flex-wrap:wrap;gap:6px}
+.bact{border:1px solid currentColor;background:transparent;color:inherit;border-radius:7px;padding:3px 10px;font-size:13px;cursor:pointer;text-decoration:none}
+.bact:hover{background:color-mix(in srgb,currentColor 10%,transparent)}
+.bx{position:absolute;top:5px;right:6px;border:0;background:transparent;color:inherit;font-size:20px;line-height:1;cursor:pointer;padding:4px 7px;opacity:.7}
+.bx:hover{opacity:1}
+
+#txt{display:block;width:100%;min-height:52vh;resize:vertical;border:0;outline:none;background:transparent;color:var(--ink);font:17px/1.85 var(--f-read);padding:20px 24px 28px}
+#txt::placeholder{color:var(--muted)}
+.reader{padding:20px 24px 32px;font:18px/1.95 var(--f-read);min-height:52vh;overflow-wrap:anywhere}
+.reader p{margin:0 0 .85em;max-width:70ch}
+.u{border-radius:4px;cursor:pointer;-webkit-box-decoration-break:clone;box-decoration-break:clone;transition:background-color .2s,color .2s}
+.u:hover{background:var(--surface-2)}
+.u.done{color:var(--done)}
+.u.now{background:var(--mark);color:var(--mark-ink);box-shadow:0 0 0 3px var(--mark)}
+::highlight(spoken-word){background-color:var(--word);color:var(--mark-ink)}
+
+/* aside: voice console */
+.side section,.side details{padding:16px 18px;border-top:1px solid var(--line)}
+.side section:first-child{border-top:0}
+.side h2{margin:0 0 10px;font:600 13.5px/1.4 var(--f-ui);color:var(--muted)}
+.seg{display:grid;grid-template-columns:1fr 1fr;gap:4px;padding:4px;background:var(--surface-2);border-radius:11px}
+.seg button{display:grid;gap:1px;text-align:left;border:0;background:transparent;border-radius:8px;padding:9px 11px;cursor:pointer;color:var(--muted)}
+.seg button b{font-weight:600;font-size:14.5px;color:var(--ink)}
+.seg button small{font-size:12px;line-height:1.35}
+.seg button[aria-pressed="true"]{background:var(--surface);box-shadow:0 1px 2px rgba(0,0,0,.08),0 0 0 1px var(--line)}
+.seg button[aria-pressed="true"] b{color:var(--accent)}
+.field{display:grid;gap:6px;margin-top:14px}
+.field:first-child{margin-top:0}
+.field>label,.field>span{font-size:13px;color:var(--muted)}
+.row{display:flex;flex-wrap:wrap;gap:6px;align-items:center;min-width:0}
+.row>input,.row>select{flex:1 1 160px;min-width:0}
+input[type=text],input[type=password],select{width:100%;font-size:14.5px;line-height:1.3;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:8px 10px}
+#gKey{font-family:var(--f-mono);font-size:13.5px}
+select{cursor:pointer}
+.check{display:flex;align-items:flex-start;gap:8px;font-size:14px;line-height:1.45;margin-top:10px;cursor:pointer}
+.check input{margin:3px 0 0;accent-color:var(--accent);flex:none}
+.hint{margin:6px 0 0;font-size:12.5px;line-height:1.5;color:var(--muted)}
+.state{font-size:13px;color:var(--muted)}
+.state.ok{color:var(--ok)}
+.state.err{color:var(--err-ink)}
+.mt{margin-top:10px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.chip{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:3px 11px;font-size:13px;cursor:pointer;color:var(--ink)}
+.chip:hover{background:var(--surface-2)}
+.chip[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft)}
+.quota{margin-top:14px;padding:10px 12px;border-radius:9px;background:var(--surface-2);font-size:13px;line-height:1.5;display:grid;gap:3px}
+.quota .n{font:500 13px/1 var(--f-mono);font-variant-numeric:tabular-nums}
+details summary{cursor:pointer;font-weight:600;font-size:14px}
+details[open] summary{margin-bottom:2px}
+.ibtn{display:grid;place-items:center;width:40px;height:40px;flex:none;border:1px solid var(--line);background:var(--surface);border-radius:10px;cursor:pointer;color:var(--ink)}
+.ibtn:hover{background:var(--surface-2)}
+.ibtn svg{width:18px;height:18px}
+.ibtn[aria-pressed="true"]{background:var(--accent-soft);border-color:var(--accent)}
+
+/* player bar */
+.transport{position:fixed;left:0;right:0;bottom:0;z-index:20;background:var(--surface);background:color-mix(in srgb,var(--surface) 92%,transparent);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);border-top:1px solid var(--line);padding:10px 16px calc(10px + env(safe-area-inset-bottom,0px))}
+.transport .in{max-width:1200px;margin:0 auto;display:flex;flex-wrap:wrap;align-items:center;gap:10px 18px}
+.tctl{display:flex;align-items:center;gap:8px}
+.btn-play{position:relative;display:grid;place-items:center;width:54px;height:54px;border-radius:50%;border:0;background:var(--accent);color:var(--accent-ink);cursor:pointer;box-shadow:0 8px 20px -10px var(--accent)}
+.btn-play svg{width:24px;height:24px}
+.btn-play.is-loading::after{content:"";position:absolute;inset:-5px;border-radius:50%;border:2px solid transparent;border-top-color:var(--accent);animation:spin .9s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.prog{flex:1 1 260px;min-width:0;display:grid;gap:5px}
+.progtop{display:flex;justify-content:space-between;align-items:baseline;gap:12px;font-size:13.5px;min-width:0}
+#tPos{font-variant-numeric:tabular-nums;white-space:nowrap}
+.mono{font-family:var(--f-mono);font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.bar{height:4px;border-radius:3px;background:var(--surface-2);overflow:hidden}
+.bar i{display:block;height:100%;width:0;background:var(--accent);border-radius:3px;transition:width .3s}
+.status{font-size:12.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-height:1.4em}
+.speed{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--muted)}
+.speed select{width:auto;padding:6px 8px}
+
+@media (max-width:940px){.grid{grid-template-columns:minmax(0,1fr)}}
+.brand p{text-wrap:pretty}
+@media (hover:none) and (pointer:coarse){.keys{display:none}}
+@media (max-width:640px){
+  .wrap{padding-inline:16px;padding-block:16px 170px}
+  .transport .in{gap:8px 10px}
+  .transport .lbl{display:none}
+  #tSave{padding:0;width:40px;height:40px;justify-content:center}
+  .prog{order:3;flex-basis:100%}
+  #txt,.reader{padding-inline:16px}
+  .reader{font-size:17px}
+}
+@media (prefers-reduced-motion:reduce){
+  .u,.bar i{transition:none}
+  .btn-play.is-loading::after{animation:none;border-color:var(--accent);opacity:.45}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <h1>อ่านให้<em>ฟัง</em></h1>
+      <p>คัดลอกข้อความ กลับมาที่หน้านี้ แล้วกด Ctrl+V ระบบจะอ่านให้ฟังทันที</p>
+    </div>
+    <div class="keys" aria-label="คีย์ลัด">
+      <span><kbd>Ctrl</kbd>+<kbd>V</kbd> วางแล้วอ่าน</span>
+      <span><kbd>Space</kbd> พัก / อ่านต่อ</span>
+      <span><kbd>←</kbd> <kbd>→</kbd> ประโยคก่อน / ถัดไป</span>
+      <span><kbd>Esc</kbd> หยุด</span>
+    </div>
+  </header>
+
+  <div class="grid">
+    <main class="card" id="main">
+      <div class="toolbar">
+        <div class="left">
+          <button type="button" class="tbtn primary" id="btnPaste"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4.5h6v3H9z"/><path d="M9 13h6M9 16.5h4"/></svg>วางแล้วอ่าน</button>
+          <button type="button" class="tbtn" id="btnEdit" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L18.5 9.5l-4-4L4 16v4z"/><path d="M13.5 6.5l4 4"/></svg>แก้ไขข้อความ</button>
+          <button type="button" class="tbtn" id="btnClear"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>ล้าง</button>
+          <span class="tag" id="sampleTag" hidden>ข้อความตัวอย่าง</span>
+        </div>
+        <div class="meta" id="meta"></div>
+      </div>
+      <div id="banner" hidden></div>
+      <textarea id="txt" spellcheck="false" aria-label="ข้อความที่จะให้อ่าน" placeholder="วางข้อความที่นี่ หรือกด Ctrl+V ที่ไหนก็ได้ในหน้านี้"></textarea>
+      <div id="reader" class="reader" hidden></div>
+    </main>
+
+    <aside class="card side" aria-label="ตั้งค่าเสียง">
+      <section>
+        <h2>เสียงที่ใช้อ่าน</h2>
+        <div class="seg" role="group" aria-label="เลือกระบบเสียง">
+          <button type="button" id="engBrowser" aria-pressed="true"><b>เสียง Edge</b><small>ฟรี ไม่จำกัด ไม่ต้องมีคีย์</small></button>
+          <button type="button" id="engGemini" aria-pressed="false"><b>Gemini</b><small>เสียงแบบ AI Studio</small></button>
+        </div>
+      </section>
+
+      <section id="secBrowser">
+        <div class="field">
+          <label for="bVoice">เสียงในเบราว์เซอร์</label>
+          <select id="bVoice"></select>
+        </div>
+        <p class="hint" id="bHint"></p>
+        <div class="row mt"><button type="button" class="tbtn" id="bTest"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5.5v13l11-6.5z"/></svg>ลองฟังเสียงนี้</button></div>
+      </section>
+
+      <section id="secGemini" hidden>
+        <div class="field">
+          <label for="gKey">Gemini API key</label>
+          <div class="row">
+            <input type="password" id="gKey" autocomplete="off" spellcheck="false" placeholder="วางคีย์ที่ได้จาก AI Studio">
+            <button type="button" class="ibtn" id="gShow" aria-label="แสดงคีย์" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></button>
+          </div>
+        </div>
+        <p class="hint"><a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">ขอคีย์ฟรีที่ Google AI Studio ↗</a></p>
+        <label class="check"><input type="checkbox" id="gRemember"><span>จำคีย์ไว้ในเบราว์เซอร์เครื่องนี้</span></label>
+        <div class="row mt"><button type="button" class="tbtn" id="gTestKey">ตรวจคีย์</button><span class="state" id="gKeyState" aria-live="polite"></span></div>
+
+        <div class="field">
+          <label for="gModel">โมเดล</label>
+          <select id="gModel">
+            <option value="gemini-3.8-flash-tts">Gemini 3.8 Flash TTS · แนะนำ</option>
+            <option value="gemini-3.1-flash-tts-preview">Gemini 3.1 Flash TTS Preview · สำรอง</option>
+            <option value="gemini-3.8-flash-lite-tts">Gemini 3.8 Flash-Lite TTS · อังกฤษเท่านั้น</option>
+          </select>
+        </div>
+        <p class="hint" id="gModelHint"></p>
+
+        <div class="field">
+          <label for="gVoice">ผู้พูด</label>
+          <select id="gVoice"></select>
+        </div>
+        <div class="row mt">
+          <button type="button" class="tbtn" id="gPreview"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5.5v13l11-6.5z"/></svg>ลองฟัง</button>
+          <button type="button" class="tbtn" id="gLoadVoices">โหลดเสียงทั้งหมด</button>
+        </div>
+        <p class="hint" id="gVoiceHint">ลองฟังใช้โควตา 1 คำขอ ฟังซ้ำเสียงเดิมไม่เสียเพิ่ม</p>
+
+        <div class="field">
+          <label for="gStyle">สไตล์การพูด (ภาษาอังกฤษสั้น ๆ)</label>
+          <input type="text" id="gStyle" spellcheck="false" placeholder="เช่น bright, sunny and cheerful">
+        </div>
+        <div class="chips" id="styleChips"></div>
+
+        <label class="check"><input type="checkbox" id="gStream"><span>เริ่มเสียงเร็ว (สตรีม) แนะนำให้เปิดไว้</span></label>
+        <label class="check"><input type="checkbox" id="gFallback"><span>ถ้าโควตาหมด อ่านต่อด้วยเสียง Edge</span></label>
+
+        <div class="quota">
+          <div>วันนี้หน้านี้ส่งไป <span class="n" id="gUsed">0</span> คำขอ · โควตารายวันรีเซ็ต <span class="n" id="gReset">14:00</span> น.</div>
+          <a href="https://aistudio.google.com/rate-limit" target="_blank" rel="noopener">ดูโควตาที่เหลือจริงใน AI Studio ↗</a>
+        </div>
+        <p class="hint">คีย์ส่งตรงจากเบราว์เซอร์ไปที่ Google เท่านั้น · แผนฟรี Google อาจนำข้อความที่ส่งไปใช้ปรับปรุงบริการ อย่าวางข้อมูลลับ</p>
+      </section>
+
+      <details>
+        <summary>การจัดข้อความก่อนอ่าน</summary>
+        <label class="check"><input type="checkbox" id="oMd"><span>ลบเครื่องหมาย Markdown เช่น ** # - |</span></label>
+        <label class="check"><input type="checkbox" id="oEmoji"><span>ลบอีโมจิ</span></label>
+        <label class="check"><input type="checkbox" id="oLinks"><span>ข้ามลิงก์เว็บ</span></label>
+        <label class="check"><input type="checkbox" id="oCode"><span>ข้ามบล็อกโค้ด</span></label>
+        <label class="check"><input type="checkbox" id="oAuto"><span>กด Ctrl+V แล้วเริ่มอ่านทันที</span></label>
+      </details>
+    </aside>
+  </div>
+</div>
+
+<div class="transport" id="transport" role="region" aria-label="ตัวควบคุมการอ่าน">
+  <div class="in">
+    <div class="tctl">
+      <button type="button" class="ibtn" id="tPrev" aria-label="ประโยคก่อนหน้า"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M6 5h2v14H6zM19.5 5.5v13L9.5 12z"/></svg></button>
+      <button type="button" class="btn-play" id="tPlay" aria-label="อ่าน"><svg id="icoPlay" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5.5v13l11-6.5z"/></svg><svg id="icoPause" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" hidden><path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z"/></svg></button>
+      <button type="button" class="ibtn" id="tNext" aria-label="ประโยคถัดไป"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M16 5h2v14h-2zM4.5 5.5v13L14.5 12z"/></svg></button>
+      <button type="button" class="ibtn" id="tStop" aria-label="หยุด"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="1.5"/></svg></button>
+    </div>
+    <div class="prog">
+      <div class="progtop"><span id="tPos">ยังไม่มีข้อความ</span><span class="mono" id="tEngine"></span></div>
+      <div class="bar"><i id="tBar"></i></div>
+      <div class="status" id="tStatus" aria-live="polite"></div>
+    </div>
+    <label class="speed" for="tSpeed"><span class="lbl">ความเร็ว</span>
+      <select id="tSpeed" aria-label="ความเร็ว">
+        <option value="0.75">0.75×</option>
+        <option value="0.9">0.9×</option>
+        <option value="1" selected>1×</option>
+        <option value="1.15">1.15×</option>
+        <option value="1.25">1.25×</option>
+        <option value="1.5">1.5×</option>
+        <option value="1.75">1.75×</option>
+        <option value="2">2×</option>
+      </select>
+    </label>
+    <button type="button" class="tbtn" id="tSave" disabled title="บันทึกได้เมื่อใช้เสียง Gemini"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v10m0 0l-4-4m4 4l4-4M5 19.5h14"/></svg><span class="lbl">บันทึก .wav</span></button>
+  </div>
+</div>
+
+<script>
+'use strict';
+/* =====================================================================
+   อ่านให้ฟัง — paste text, hear it.
+   Two engines:
+     • Browser speech (Web Speech API) — Edge ships free natural Thai voices.
+     • Gemini TTS over the Interactions API (POST /v1beta/interactions),
+       streamed as 24 kHz 16-bit PCM and played in short WAV segments cut at
+       quiet points, so speed changes keep the pitch.
+   ===================================================================== */
+
+/* ---------- small helpers ---------- */
+const $ = (id) => document.getElementById(id);
+const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+const fmtNum = (n) => Number(n).toLocaleString('th-TH');
+function fmtClock(sec) { sec = Math.max(0, Math.round(sec)); return Math.floor(sec / 60) + ':' + String(sec % 60).padStart(2, '0'); }
+const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* ---------- storage (best effort, this browser only) ---------- */
+const K_PREFS = 'aanhaifang.prefs.v1', K_TEXT = 'aanhaifang.text.v1', K_USAGE = 'aanhaifang.usage.v1';
+function readJSON(k, fb) { try { const v = JSON.parse(localStorage.getItem(k)); return v == null ? fb : v; } catch (e) { return fb; } }
+function writeJSON(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
+const DEFAULTS = {
+  engine: 'browser', bVoice: '', speed: 1,
+  gModel: 'gemini-3.8-flash-tts', gVoice: 'Fola', gStyle: 'bright, sunny and cheerful',
+  gStream: true, gFallback: true, gRemember: true, gKey: '',
+  oMd: true, oEmoji: true, oLinks: true, oCode: true, oAuto: true,
+};
+const prefs = Object.assign({}, DEFAULTS, readJSON(K_PREFS, {}));
+function savePrefs() { const p = Object.assign({}, prefs); if (!p.gRemember) p.gKey = ''; writeJSON(K_PREFS, p); }
+
+const SAMPLE = [
+  '**ข้อความตัวอย่าง** กดปุ่มเล่นด้านล่าง หรือกด Space เพื่อลองฟัง',
+  '',
+  'อ่านให้ฟัง ช่วยอ่านข้อความภาษาไทยและภาษาอังกฤษ เช่น คำตอบที่คัดลอกมาจาก ChatGPT หรือ Claude ก่อนอ่านจะลบเครื่องหมาย Markdown และอีโมจิออกให้ ✅',
+  '',
+  '- เสียง Edge ใช้ได้ฟรีไม่จำกัด ไม่ต้องมีคีย์',
+  '- ถ้าอยากได้เสียงแบบ Google AI Studio ให้เลือก Gemini แล้ววาง API key ฟรี',
+  '',
+  'เวลาใช้งานจริง แค่คัดลอกข้อความ กลับมาที่หน้านี้ แล้วกด Ctrl+V ข้อความใหม่จะมาแทนที่ และเริ่มอ่านทันที',
+].join('\n');
+
+/* =====================================================================
+   Text → speakable text
+   ===================================================================== */
+const VOCAL_TAG = /^<(?:short pause|long pause|laugh|laughter|sigh|sighs|breath|heavy breath|exhales|cough|chuckle|chuckles|gasp|giggle|groan|sob|sneeze|yawn|whispers|whispering|throat-clearing|tsk|phew|pff|snicker|snort|cheer|cry|shout|scream|whimper|pant|moan|hiss|growl|grunt|grr|argh|cackle|shriek)>$/i;
+
+function cleanForSpeech(raw, o) {
+  const opt = Object.assign({ md: true, emoji: true, links: true, code: true }, o || {});
+  let t = String(raw == null ? '' : raw).replace(/\r\n?/g, '\n').replace(/[   \t]/g, ' ');
+  // fenced code blocks
+  if (opt.code) t = t.replace(/^[ ]*(`{3,}|~{3,})[^\n]*\n[\s\S]*?(?:^[ ]*\1[ ]*$|(?![\s\S]))/gm, '\n');
+  else t = t.replace(/^[ ]*(`{3,}|~{3,})[^\n]*$/gm, '');
+  if (opt.md) {
+    t = t.replace(/<!--[\s\S]*?-->/g, ' ');
+    t = t.replace(/<\/?[A-Za-z][^<>\n]*>/g, (m) => (VOCAL_TAG.test(m) ? m : ' '));
+    t = t.replace(/!\[([^\]\n]*)\]\([^)\n]*\)/g, '$1');
+    t = t.replace(/\[([^\]\n]+)\]\((?:[^()\n]|\([^()\n]*\))*\)/g, '$1');
+    t = t.replace(/\[([^\]\n]+)\]\[[^\]\n]*\]/g, '$1');
+    t = t.replace(/^[ ]{0,3}\[[^\]\n]+\]:[ ]*\S+.*$/gm, '');
+  }
+  if (opt.links) t = t.replace(/\b(?:https?:\/\/|www\.)[A-Za-z0-9\-._~:/?#@!$&*+,;=%]+/gi, ' ');
+  if (opt.md) {
+    t = t.replace(/`([^`\n]+)`/g, '$1');
+    t = t.split('\n').map((line) => {
+      if (/^\s{0,3}([-*_])(?:\s*\1){2,}\s*$/.test(line)) return '';                              // horizontal rule
+      if (/^\s*\|?\s*:?-{3,}:?\s*(?:\|\s*:?-{3,}:?\s*)*\|?\s*$/.test(line)) return '';           // table separator
+      let l = line;
+      l = l.replace(/^\s{0,3}#{1,6}\s+/, '').replace(/\s+#+\s*$/, '');                            // heading
+      l = l.replace(/^\s*(?:>\s?)+/, '');                                                         // quote
+      l = l.replace(/^\s*[-*+•●▪◦‣]\s+(?:\[[ xX]\]\s+)?/, '');                                    // bullet / task box
+      if (/^\s*\|.*\|\s*$/.test(l)) l = l.trim().replace(/^\||\|$/g, '').split('|').map((s) => s.trim()).filter(Boolean).join(', ');
+      return l;
+    }).join('\n');
+    t = t.replace(/(\*\*|__)(?=\S)([^\n]*?\S)\1/g, '$2');                                         // bold
+    t = t.replace(/(^|[^\\\w*])\*(?=[^\s*])([^*\n]*?[^\s*\\])\*(?![\w*])/g, '$1$2');               // *italic*
+    t = t.replace(/(^|[^\\\w])_(?=[^\s_])([^_\n]*?[^\s_\\])_(?!\w)/g, '$1$2');                     // _italic_
+    t = t.replace(/~~(?=\S)([^\n]*?\S)~~/g, '$1');
+    t = t.replace(/\*{2,}/g, ' ').replace(/(^|\s)#{2,}(?=\s|$)/g, '$1');
+    t = t.replace(/\\([\\`*_{}[\]()#+\-.!|>~])/g, '$1');
+    t = t.replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&lt;/g, '‹').replace(/&gt;/g, '›');
+  }
+  if (opt.emoji) t = t.replace(/[\p{Extended_Pictographic}\u{1F1E6}-\u{1F1FF}\u{1F3FB}-\u{1F3FF}︎️‍⃣]/gu, '');
+  t = t.replace(/[ ]*(?:→|⇒|➜|➔|➡|⟶|->|=>)[ ]*/g, ', ');
+  t = t.replace(/[✓✔✗✘★☆■□▪▫◆◇●○◦▶►▸]/g, ' ');
+  t = t.replace(/[ ]*\|[ ]*/g, ', ');
+  t = t.replace(/[ ]{2,}/g, ' ').replace(/ *\n */g, '\n').replace(/\n{3,}/g, '\n\n');
+  t = t.replace(/^[ ,;]+|[ ,]+$/gm, '');
+  return t.trim();
+}
+
+/* units = short sentence-sized pieces (what the highlighter follows) */
+const SENT_END = /[.!?…。！？:;]$/;
+function splitUnits(text, maxLen) {
+  maxLen = maxLen || 200;
+  const target = Math.min(maxLen, 140);
+  const units = [];
+  let para = 0;
+  for (const raw of String(text).split(/\n+/)) {
+    const p = raw.trim();
+    if (!p || !/[\p{L}\p{N}]/u.test(p)) continue;
+    // phrases: break at a space after sentence punctuation, or at a space between Thai runs
+    const words = p.split(/\s+/);
+    const phrases = [];
+    let cur = '';
+    for (const w of words) {
+      if (!w) continue;
+      if (!cur) { cur = w; continue; }
+      const prev = cur.slice(-1), next = w.charAt(0);
+      const brk = SENT_END.test(cur) || (/[฀-๿)\]"'”’,]/.test(prev) && /[฀-๿]/.test(next));
+      if (brk) { phrases.push(cur); cur = w; } else cur += ' ' + w;
+    }
+    if (cur) phrases.push(cur);
+    // merge phrases into units of ~target characters
+    let buf = '';
+    const flush = () => { if (buf) { units.push({ text: buf, para, sp: true }); buf = ''; } };
+    for (const ph of phrases) {
+      if (ph.length > maxLen) {
+        flush();
+        for (const part of hardSplit(ph, maxLen)) units.push({ text: part.text, para, sp: part.sp });
+        continue;
+      }
+      if (!buf) { buf = ph; continue; }
+      if (buf.length + 1 + ph.length <= target || (buf.length < 40 && buf.length + 1 + ph.length <= maxLen)) buf += ' ' + ph;
+      else { flush(); buf = ph; }
+    }
+    flush();
+    if (units.length && units[units.length - 1].para === para) units[units.length - 1].sp = false;
+    para++;
+  }
+  return units;
+}
+function hardSplit(s, maxLen) {
+  let words = null;
+  try { if (typeof Intl !== 'undefined' && Intl.Segmenter) words = Array.from(new Intl.Segmenter('th', { granularity: 'word' }).segment(s), (x) => x.segment); } catch (e) {}
+  if (!words || !words.length) words = s.match(/[\s\S]{1,24}/g) || [s];
+  const out = [];
+  let buf = '';
+  const push = () => {
+    const t = buf.replace(/\s+$/, '');
+    if (t) out.push({ text: t, sp: t.length !== buf.length });
+    else if (out.length && buf) out[out.length - 1].sp = true;
+    buf = '';
+  };
+  for (const w of words) {
+    if (!buf && /^\s+$/.test(w)) { if (out.length) out[out.length - 1].sp = true; continue; }
+    if (buf && buf.length + w.length > maxLen) push();
+    if (!buf && /^\s+$/.test(w)) { if (out.length) out[out.length - 1].sp = true; continue; }
+    buf += w;
+    while (buf.length > maxLen) { out.push({ text: buf.slice(0, maxLen), sp: false }); buf = buf.slice(maxLen); }
+  }
+  if (buf) push();
+  return out;
+}
+/* groups = what one Gemini request covers (several units, cut at paragraph ends when possible) */
+function buildGroups(units, sizes) {
+  const groups = [];
+  let g = null;
+  for (let i = 0; i < units.length; i++) {
+    const limit = sizes[Math.min(groups.length, sizes.length - 1)];
+    const len = units[i].text.length + 1;
+    if (g && g.chars > 0) {
+      const newPara = units[i].para !== units[i - 1].para;
+      if (g.chars + len > limit || (newPara && g.chars >= limit * 0.6)) { groups.push(g); g = null; }
+    }
+    if (!g) g = { u0: i, u1: i, chars: 0 };
+    g.u1 = i + 1;
+    g.chars += len;
+  }
+  if (g) groups.push(g);
+  return groups;
+}
+function groupText(units, g) {
+  let s = '';
+  for (let i = g.u0; i < g.u1; i++) {
+    s += units[i].text;
+    if (i < g.u1 - 1) s += units[i + 1].para !== units[i].para ? '\n\n' : (units[i].sp ? ' ' : '');
+  }
+  return s;
+}
+function wordLenAt(text, idx) {
+  const m = /^[A-Za-z0-9'’\-]+/.exec(text.slice(idx));
+  if (m) return m[0].length;
+  try {
+    if (Intl.Segmenter) for (const s of new Intl.Segmenter('th', { granularity: 'word' }).segment(text.slice(idx, idx + 40))) return s.segment.length;
+  } catch (e) {}
+  return 1;
+}
+
+/* =====================================================================
+   Audio bytes: base64, WAV, PCM
+   ===================================================================== */
+function b64ToBytes(b64) {
+  const bin = atob(String(b64).replace(/[^A-Za-z0-9+/=_-]/g, '').replace(/-/g, '+').replace(/_/g, '/'));
+  const out = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+  return out;
+}
+function parseWav(bytes) {
+  const tag = (o) => String.fromCharCode(bytes[o], bytes[o + 1], bytes[o + 2], bytes[o + 3]);
+  if (bytes.length < 12 || tag(0) !== 'RIFF' || tag(8) !== 'WAVE') return null;
+  const dv = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+  let o = 12, fmt = null;
+  while (o + 8 <= bytes.length) {
+    const id = tag(o);
+    let size = dv.getUint32(o + 4, true);
+    const body = o + 8;
+    if (id === 'fmt ' && body + 16 <= bytes.length) {
+      fmt = { format: dv.getUint16(body, true), channels: dv.getUint16(body + 2, true), rate: dv.getUint32(body + 4, true), bits: dv.getUint16(body + 14, true) };
+    } else if (id === 'data') {
+      if (!size || size === 0xFFFFFFFF || body + size > bytes.length) size = bytes.length - body;
+      return fmt ? Object.assign({ data: bytes.subarray(body, body + size) }, fmt) : null;
+    }
+    o = body + size + (size & 1);
+  }
+  return null;
+}
+function pcm16(bytes, endian) {
+  const n = bytes.length >> 1;
+  const out = new Int16Array(n);
+  const dv = new DataView(bytes.buffer, bytes.byteOffset, n * 2);
+  const le = endian !== 'be';
+  for (let i = 0; i < n; i++) out[i] = dv.getInt16(i * 2, le);
+  return out;
+}
+/* audio/l16 is little-endian per Google's docs; this check only flips it if the bytes are clearly big-endian */
+function guessEndian(b) {
+  const n = Math.min(b.length >> 1, 8000);
+  let dLE = 0, dBE = 0, pLE = 0, pBE = 0;
+  for (let i = 0; i < n; i++) {
+    const lo = b[2 * i], hi = b[2 * i + 1];
+    let le = (hi << 8) | lo; if (le & 0x8000) le -= 0x10000;
+    let be = (lo << 8) | hi; if (be & 0x8000) be -= 0x10000;
+    if (i) { dLE += Math.abs(le - pLE); dBE += Math.abs(be - pBE); }
+    pLE = le; pBE = be;
+  }
+  return dBE < dLE * 0.5 ? 'be' : 'le';
+}
+function downmix(s, ch) {
+  const n = Math.floor(s.length / ch);
+  const out = new Int16Array(n);
+  for (let i = 0; i < n; i++) { let a = 0; for (let c = 0; c < ch; c++) a += s[i * ch + c]; out[i] = Math.round(a / ch); }
+  return out;
+}
+function wavHeader(numSamples, rate) {
+  const h = new ArrayBuffer(44), dv = new DataView(h);
+  const w = (o, s) => { for (let i = 0; i < 4; i++) dv.setUint8(o + i, s.charCodeAt(i)); };
+  w(0, 'RIFF'); dv.setUint32(4, 36 + numSamples * 2, true); w(8, 'WAVE');
+  w(12, 'fmt '); dv.setUint32(16, 16, true); dv.setUint16(20, 1, true); dv.setUint16(22, 1, true);
+  dv.setUint32(24, rate, true); dv.setUint32(28, rate * 2, true); dv.setUint16(32, 2, true); dv.setUint16(34, 16, true);
+  w(36, 'data'); dv.setUint32(40, numSamples * 2, true);
+  return h;
+}
+function makeWavBlob(parts, rate) {
+  let n = 0;
+  for (const p of parts) n += p.length;
+  return new Blob([wavHeader(n, rate)].concat(parts), { type: 'audio/wav' });
+}
+/* quietest ~20 ms window between lo and hi, nudged toward target — where segments are cut */
+function findQuietCut(buf, lo, hi, target, rate) {
+  const win = Math.max(64, Math.round(rate * 0.02)), step = Math.max(32, win >> 1);
+  lo = Math.max(0, Math.floor(lo)); hi = Math.floor(hi);
+  if (hi - lo < win) return Math.round(clamp(target, lo, Math.max(lo, hi)));
+  let best = -1, bestScore = Infinity;
+  for (let s = lo; s + win <= hi; s += step) {
+    let e = 0;
+    for (let i = s; i < s + win; i += 2) { const v = buf[i]; e += v * v; }
+    const rms = Math.sqrt(e / (win / 2));
+    const center = s + (win >> 1);
+    const score = (rms + 30) * (1 + 0.35 * Math.abs(center - target) / rate);
+    if (score < bestScore) { bestScore = score; best = center; }
+  }
+  return best < 0 ? Math.round(target) : best;
+}
+function segmentPcm(buf, start, end, rate) {
+  const s = buf.slice(start, end);
+  const f = Math.min(Math.round(rate * 0.004), s.length >> 1);
+  for (let i = 0; i < f; i++) {
+    const k = i / f;
+    s[i] = Math.round(s[i] * k);
+    s[s.length - 1 - i] = Math.round(s[s.length - 1 - i] * k);
+  }
+  return s;
+}
+
+/* growing PCM store for one Gemini request */
+class PcmJob {
+  constructor(key) {
+    this.key = key; this.rate = 24000; this.buf = new Int16Array(24000 * 20); this.len = 0;
+    this.done = false; this.error = null; this.state = 'queued'; this.carry = -1; this.endian = '';
+    this.rateKnown = false; this.truncated = false;
+  }
+  _grow(n) {
+    if (this.len + n <= this.buf.length) return;
+    let cap = this.buf.length;
+    while (cap < this.len + n) cap *= 2;
+    const nb = new Int16Array(cap);
+    nb.set(this.buf.subarray(0, this.len));
+    this.buf = nb;
+  }
+  pushSamples(s) {
+    if (!s.length) return;
+    this._grow(s.length);
+    this.buf.set(s, this.len);
+    this.len += s.length;
+    notifyJob(this);
+  }
+  pushBytes(bytes, mime) {
+    if (bytes.length >= 12 && bytes[0] === 0x52 && bytes[1] === 0x49 && bytes[2] === 0x46 && bytes[3] === 0x46) {
+      const w = parseWav(bytes);
+      if (w) {
+        if (w.bits !== 16) throw new Error('รูปแบบเสียงไม่รองรับ (' + w.bits + '-bit)');
+        this.rate = w.rate || 24000; this.rateKnown = true; this.carry = -1;
+        let s = pcm16(w.data, 'le');
+        if (w.channels > 1) s = downmix(s, w.channels);
+        this.pushSamples(s);
+        return;
+      }
+    }
+    if (!this.rateKnown) { const m = /rate=(\d+)/i.exec(mime || ''); if (m) { this.rate = +m[1]; this.rateKnown = true; } }
+    let b = bytes;
+    if (this.carry >= 0) { const nb = new Uint8Array(b.length + 1); nb[0] = this.carry; nb.set(b, 1); b = nb; this.carry = -1; }
+    if (b.length & 1) { this.carry = b[b.length - 1]; b = b.subarray(0, b.length - 1); }
+    if (!this.endian && b.length >= 800) this.endian = guessEndian(b);
+    this.pushSamples(pcm16(b, this.endian || 'le'));
+  }
+  pushBase64(s, mime) { this.pushBytes(b64ToBytes(s), mime); }
+  finish() { this.done = true; this.state = 'done'; notifyJob(this); }
+  fail(err) { this.error = err; this.done = true; this.state = 'error'; notifyJob(this); }
+}
+/* finished audio stays in memory, so replaying or jumping back never spends quota again */
+const GemCache = {
+  map: new Map(), total: 0, max: 45000000,
+  get(k) { const j = this.map.get(k); if (j) { this.map.delete(k); this.map.set(k, j); } return j || null; },
+  put(job) {
+    if (!job || !job.done || job.error || job.truncated || !job.len || this.map.has(job.key)) return;
+    this.map.set(job.key, job); this.total += job.len;
+    while (this.total > this.max && this.map.size > 1) {
+      const first = this.map.entries().next().value;
+      this.map.delete(first[0]); this.total -= first[1].len;
+    }
+  },
+};
+
+/* =====================================================================
+   Gemini API (Interactions API, text-to-speech)
+   ===================================================================== */
+const API = 'https://generativelanguage.googleapis.com/v1beta';
+class ApiError extends Error {
+  constructor(message, info) {
+    super(message);
+    this.name = 'ApiError';
+    Object.assign(this, { status: 0, code: '', retryAfter: 0, perDay: false }, info || {});
+  }
+}
+function parseErrorBody(text) {
+  let obj = null;
+  try { obj = JSON.parse(text); } catch (e) { return null; }
+  if (Array.isArray(obj)) obj = obj.find((x) => x && x.error) || obj[0];
+  return obj && obj.error ? obj.error : null;
+}
+async function toApiError(res) {
+  let text = '';
+  try { text = await res.text(); } catch (e) {}
+  const e = parseErrorBody(text) || {};
+  const details = Array.isArray(e.details) ? e.details : [];
+  let retry = 0;
+  for (const d of details) { const m = /^([\d.]+)s$/.exec(String((d && d.retryDelay) || '')); if (m) retry = Math.max(retry, parseFloat(m[1])); }
+  const ra = parseFloat(res.headers.get('retry-after') || '');
+  if (!retry && ra > 0) retry = ra;
+  const blob = JSON.stringify(details) + ' ' + (e.message || '');
+  return new ApiError(e.message || ('HTTP ' + res.status), { status: res.status, code: e.status || '', retryAfter: retry, perDay: /per.?day|PerDay|_day\b|daily/i.test(blob) });
+}
+function isKeyError(err) { return err instanceof ApiError && (/API key|API_KEY/i.test(err.message) || err.status === 401); }
+function thaiError(err) {
+  if (!err) return 'เกิดข้อผิดพลาด';
+  if (err instanceof ApiError) {
+    const m = err.message || '';
+    if (/API key not valid|API_KEY_INVALID|API key expired/i.test(m)) return 'API key ไม่ถูกต้องหรือหมดอายุ ตรวจว่าคัดลอกมาครบทั้งบรรทัด';
+    if (/API key/i.test(m) && /missing|required/i.test(m)) return 'ยังไม่ได้ใส่ API key';
+    if (err.status === 429) return err.perDay ? 'โควตาฟรีของวันนี้หมดแล้ว' : 'ส่งคำขอถี่เกินโควตาฟรี';
+    if (err.status === 401 || err.status === 403) return 'คีย์นี้ไม่มีสิทธิ์ใช้งาน: ' + m;
+    if (err.status === 404) return 'ไม่พบโมเดลนี้ ลองเลือกโมเดลอื่น (' + m + ')';
+    if (err.status === 400) return 'Google ไม่รับคำขอ: ' + m;
+    if (err.status >= 500) return 'เซิร์ฟเวอร์ Google ไม่ว่างชั่วคราว ลองใหม่อีกครั้ง';
+    return m || 'เกิดข้อผิดพลาดจาก Google';
+  }
+  if (err.message === 'no-audio') return 'Gemini ไม่ได้ส่งเสียงกลับมา ลองเปลี่ยนผู้พูดหรือสไตล์';
+  if (err instanceof TypeError) return 'เชื่อมต่อ Google ไม่ได้ ตรวจอินเทอร์เน็ต หรือส่วนขยายที่บล็อกการเชื่อมต่อ';
+  return err.message || String(err);
+}
+const isLegacyModel = (m) => /preview/i.test(m || '');
+function ttsBody(text, cfg, stream) {
+  const legacy = isLegacyModel(cfg.model);
+  const style = (cfg.style || '').trim();
+  // 3.8 models read `text` verbatim and take delivery from speech_metadata; older previews take it in the prompt
+  const part = { type: 'text', text: legacy && style ? 'Read aloud in a ' + style + ' voice:\n' + text : text };
+  if (style && !legacy) part.annotations = [{ type: 'speech_metadata', style }];
+  const body = {
+    model: cfg.model,
+    input: [{ type: 'user_input', content: [part] }],
+    response_format: { type: 'audio' },
+    generation_config: { speech_config: [{ voice: cfg.voice }] },
+  };
+  if (stream) body.stream = true;
+  return body;
+}
+/* audio blocks in a non-streamed response: steps[].content[] {type:'audio', data} */
+function extractAudio(json) {
+  const out = [];
+  for (const r of (Array.isArray(json) ? json : [json])) {
+    if (!r || !Array.isArray(r.steps)) continue;
+    for (const st of r.steps) {
+      if (!st || (st.type && st.type !== 'model_output')) continue;
+      for (const c of (Array.isArray(st.content) ? st.content : [])) {
+        if (c && c.type === 'audio' && typeof c.data === 'string' && c.data) out.push({ data: c.data, mime: c.mime_type || c.mimeType || '' });
+      }
+    }
+  }
+  if (out.length) return out;
+  const seen = new Set();
+  (function walk(o, d) {
+    if (!o || typeof o !== 'object' || d > 12 || seen.has(o)) return;
+    seen.add(o);
+    if (Array.isArray(o)) { for (const x of o) walk(x, d + 1); return; }
+    const inl = o.inlineData || o.inline_data;
+    if (inl && typeof inl.data === 'string' && /^audio\//i.test(inl.mimeType || inl.mime_type || 'audio/')) { out.push({ data: inl.data, mime: inl.mimeType || inl.mime_type || '' }); return; }
+    if (o.type === 'audio' && typeof o.data === 'string' && o.data) { out.push({ data: o.data, mime: o.mime_type || o.mimeType || '' }); return; }
+    for (const k of Object.keys(o)) walk(o[k], d + 1);
+  })(json, 0);
+  return out;
+}
+class SSEParser {
+  constructor(onEvent) { this.onEvent = onEvent; this.buf = ''; this.ev = ''; this.data = []; }
+  feed(chunk) {
+    this.buf += chunk;
+    let start = 0, nl;
+    while ((nl = this.buf.indexOf('\n', start)) >= 0) { this.line(this.buf.slice(start, nl)); start = nl + 1; }
+    this.buf = this.buf.slice(start);
+  }
+  end() { if (this.buf) { const l = this.buf; this.buf = ''; this.line(l); } this.dispatch(); }
+  line(l) {
+    if (l.endsWith('\r')) l = l.slice(0, -1);
+    if (l === '') { this.dispatch(); return; }
+    if (l[0] === ':') return;
+    const c = l.indexOf(':');
+    const f = c < 0 ? l : l.slice(0, c);
+    let v = c < 0 ? '' : l.slice(c + 1);
+    if (v[0] === ' ') v = v.slice(1);
+    if (f === 'event') this.ev = v;
+    else if (f === 'data') this.data.push(v);
+  }
+  dispatch() {
+    const ev = this.ev, data = this.data;
+    this.ev = ''; this.data = [];
+    if (data.length) this.onEvent(ev, data.join('\n'));
+  }
+}
+async function ttsRequest(text, cfg, opts) {
+  const res = await fetch(API + '/interactions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'x-goog-api-key': cfg.key },
+    body: JSON.stringify(ttsBody(text, cfg, opts.stream)),
+    signal: opts.signal,
+  });
+  if (!res.ok) throw await toApiError(res);
+  let got = 0;
+  const onEvent = (name, data) => {
+    let ev;
+    try { ev = JSON.parse(data); } catch (e) { return; }
+    for (const e of (Array.isArray(ev) ? ev : [ev])) {
+      if (!e || typeof e !== 'object') continue;
+      const type = e.event_type || name || '';
+      if (type === 'error' || (e.error && !e.delta)) {
+        const er = e.error || {};
+        throw new ApiError(er.message || 'การสตรีมเสียงขัดข้อง', { status: typeof er.code === 'number' ? er.code : 0, code: String(er.status || er.code || 'stream_error') });
+      }
+      const d = e.delta;
+      if (d && d.type === 'audio' && typeof d.data === 'string' && d.data) { opts.onAudio(d.data, d.mime_type || d.mimeType || ''); got++; }
+    }
+  };
+  const ct = (res.headers.get('content-type') || '').toLowerCase();
+  if (opts.stream && res.body && ct.includes('event-stream')) {
+    const reader = res.body.getReader();
+    const dec = new TextDecoder();
+    const p = new SSEParser(onEvent);
+    try {
+      for (;;) {
+        const r = await reader.read();
+        if (r.done) break;
+        p.feed(dec.decode(r.value, { stream: true }));
+      }
+      p.feed(dec.decode());
+      p.end();
+    } catch (err) {
+      try { await reader.cancel(); } catch (e) {}
+      throw err;
+    }
+  } else {
+    const txt = await res.text();
+    if (/^\s*(event|data):/.test(txt)) { const p = new SSEParser(onEvent); p.feed(txt); p.end(); }
+    else {
+      let json;
+      try { json = JSON.parse(txt); } catch (e) { throw new ApiError('คำตอบจาก Google อ่านไม่ออก'); }
+      const errObj = (Array.isArray(json) ? json : [json]).find((x) => x && x.error && !x.steps);
+      if (errObj) throw new ApiError(errObj.error.message || 'error', { status: typeof errObj.error.code === 'number' ? errObj.error.code : 0, code: errObj.error.status || '' });
+      for (const a of extractAudio(json)) { opts.onAudio(a.data, a.mime); got++; }
+    }
+  }
+  if (!got) throw new Error('no-audio');
+}
+function sleepAbortable(ms, signal) {
+  return new Promise((resolve, reject) => {
+    const t = setTimeout(resolve, ms);
+    if (signal) signal.addEventListener('abort', () => { clearTimeout(t); reject(new DOMException('Aborted', 'AbortError')); }, { once: true });
+  });
+}
+async function ttsWithRetry(text, cfg, opts, onWait) {
+  let attempt = 0;
+  for (;;) {
+    try { return await ttsRequest(text, cfg, opts); }
+    catch (err) {
+      if (err && err.name === 'AbortError') throw err;
+      if (opts.gotAudio && opts.gotAudio()) throw err;      // part of the audio already arrived: retrying would repeat it
+      attempt++;
+      const status = err instanceof ApiError ? err.status : 0;
+      if ((status >= 500 || err instanceof TypeError) && attempt <= 2) { await sleepAbortable(1200 * attempt, opts.signal); continue; }
+      if (status === 429 && !err.perDay && attempt <= 3 && !(err.retryAfter > 90)) { await onWait(clamp(err.retryAfter || 20, 2, 90), opts.signal); continue; }
+      throw err;
+    }
+  }
+}
+function isStreamProblem(err) {
+  if (!err) return false;
+  if (err.message === 'no-audio') return true;
+  if (err instanceof ApiError) return (err.status === 400 && /stream/i.test(err.message)) || (!err.status && err.code !== 'RESOURCE_EXHAUSTED');
+  return false;
+}
+function countdown(sec, signal) {
+  return new Promise((resolve, reject) => {
+    let left = Math.ceil(sec);
+    let iv = 0;
+    const tick = () => {
+      if (signal && signal.aborted) { clearInterval(iv); reject(new DOMException('Aborted', 'AbortError')); return; }
+      if (left <= 0) { clearInterval(iv); resolve(); return; }
+      if (Ctl.engine === 'gemini' && Ctl.mode !== 'idle') Ctl.status('ส่งคำขอถี่เกินโควตาต่อนาที · ลองใหม่อัตโนมัติใน ' + left + ' วินาที');
+      left--;
+    };
+    iv = setInterval(tick, 1000);
+    tick();
+  });
+}
+
+/* Gemini session: one request per group, one request in flight at a time */
+const Gem = {
+  groups: [], jobs: [], unitGroup: [], cfg: null, sig: '', stream: true, spc: 1900, fetching: -1, abort: null, sid: 0,
+  setup(us, cfg, sig) {
+    this.cancel();
+    this.cfg = cfg; this.sig = sig; this.stream = !!cfg.stream;
+    this.groups = buildGroups(us, this.stream ? [2500] : [360, 900, 1800, 2500]);
+    this.unitGroup = new Array(us.length).fill(0);
+    this.groups.forEach((g, gi) => {
+      g.text = groupText(us, g);
+      g.w = [];
+      let acc = 0;
+      for (let i = g.u0; i < g.u1; i++) { g.w.push(acc); acc += us[i].text.length + 6; this.unitGroup[i] = gi; }
+      g.W = acc || 1;
+    });
+    this.jobs = this.groups.map(() => null);
+  },
+  keyOf(g) { const c = this.cfg; return [c.model, c.voice, c.style, this.groups[g].text].join('␞'); },
+  ensure(g) {
+    if (!this.cfg || g < 0 || g >= this.groups.length) return null;
+    if (this.jobs[g]) return this.jobs[g];
+    const cached = GemCache.get(this.keyOf(g));
+    if (cached) { this.jobs[g] = cached; return cached; }
+    const job = new PcmJob(this.keyOf(g));
+    this.jobs[g] = job;
+    this.pump();
+    return job;
+  },
+  clearErrors() { this.jobs = this.jobs.map((j) => (j && (j.state === 'error' || j.state === 'aborted') ? null : j)); },
+  dropQueued(keep) { this.jobs.forEach((j, i) => { if (j && j.state === 'queued' && !(keep && keep.includes(i))) this.jobs[i] = null; }); },
+  pump() {
+    if (this.fetching >= 0) return;
+    const want = [Player.sg, Player.sg + 1];
+    let g = want.find((i) => this.jobs[i] && this.jobs[i].state === 'queued');
+    if (g === undefined) g = this.jobs.findIndex((j) => j && j.state === 'queued');
+    if (g == null || g < 0) return;
+    this.run(g);
+  },
+  async run(g) {
+    const job = this.jobs[g];
+    if (!job || job.state !== 'queued') return;
+    const sid = this.sid;
+    this.fetching = g;
+    job.state = 'loading';
+    const ac = new AbortController();
+    this.abort = ac;
+    const text = this.groups[g].text;
+    let got = 0;
+    const onAudio = (b64, mime) => { got++; job.pushBase64(b64, mime); };
+    const opts = (stream) => ({ stream, signal: ac.signal, onAudio, gotAudio: () => got > 0 });
+    try {
+      try { await ttsWithRetry(text, this.cfg, opts(this.stream), countdown); }
+      catch (err) {
+        if (this.stream && got === 0 && isStreamProblem(err)) { this.stream = false; await ttsWithRetry(text, this.cfg, opts(false), countdown); }
+        else throw err;
+      }
+      Usage.bump();
+      if (job.len > 0) this.spc = this.spc * 0.4 + (job.len / this.groups[g].W) * 0.6;
+      job.finish();
+      GemCache.put(job);
+    } catch (err) {
+      if (err && err.name === 'AbortError') { job.state = 'aborted'; return; }
+      if (got > 0) {
+        Usage.bump();
+        job.truncated = true;
+        job.finish();
+        if (sid === this.sid) banner('warn', 'การเชื่อมต่อขาดระหว่างสร้างเสียง ช่วงท้ายของท่อนนี้อาจหายไป (' + thaiError(err) + ')');
+      } else job.fail(err);
+    } finally {
+      if (this.abort === ac) this.abort = null;
+      if (sid === this.sid) { this.fetching = -1; this.pump(); }
+    }
+  },
+  cancel() {
+    this.sid++;
+    if (this.abort) { try { this.abort.abort(); } catch (e) {} }
+    this.abort = null;
+    this.fetching = -1;
+  },
+  estimateTotal(g) {
+    const job = this.jobs[g], grp = this.groups[g];
+    if (job && job.done) return job.len;
+    return Math.max(job ? job.len : 0, grp.W * this.spc);
+  },
+  /* no word timings come back, so the highlight is placed by each sentence's share of the characters */
+  unitAt(g, sample) {
+    const grp = this.groups[g];
+    if (!grp) return 0;
+    const total = this.estimateTotal(g);
+    const x = total > 0 ? (sample / total) * grp.W : 0;
+    let lo = 0, hi = grp.w.length - 1;
+    while (lo < hi) { const mid = (lo + hi + 1) >> 1; if (grp.w[mid] <= x) lo = mid; else hi = mid - 1; }
+    return grp.u0 + lo;
+  },
+};
+
+/* plays a Gemini session as short WAV segments through two <audio> elements (current + next, preloaded) */
+const Player = {
+  els: [], cur: 0, urls: [null, null], rate: 1,
+  playing: false, waiting: false, active: null, prepared: null, preparedEnd: false,
+  sg: 0, sp: null, targetUnit: -1, first: true, lastGroup: -1, floor: -1, floorGroup: -1,
+  init() {
+    for (let i = 0; i < 2; i++) {
+      const el = new Audio();
+      el.preload = 'auto';
+      try { el.preservesPitch = true; } catch (e) {}
+      el.addEventListener('ended', () => this.onEnded(i));
+      el.addEventListener('error', () => { if (el.getAttribute('src') && i === this.cur && this.active) this.onEnded(i); });
+      this.els.push(el);
+    }
+    this.rate = prefs.speed || 1;
+  },
+  startAt(g, unit) {
+    this.halt();
+    Gem.dropQueued([g, g + 1]);
+    this.sg = g; this.sp = null; this.targetUnit = unit; this.first = true; this.lastGroup = -1;
+    this.floor = unit; this.floorGroup = g;
+    this.playing = true;
+    this.advance();
+  },
+  resolveStart() {
+    if (this.sp !== null) return true;
+    const grp = Gem.groups[this.sg];
+    if (!grp || this.targetUnit <= grp.u0 || this.targetUnit >= grp.u1) { this.sp = 0; return true; }
+    const job = Gem.jobs[this.sg];
+    if (!job) return false;
+    if (job.state === 'error') { this.sp = 0; return true; }
+    const r = job.rate;
+    const total = job.done ? job.len : grp.W * Gem.spc;
+    const est = Math.round((grp.w[this.targetUnit - grp.u0] / grp.W) * total);
+    if (!job.done && est + 0.5 * r > job.len) return false;
+    this.sp = clamp(findQuietCut(job.buf, est - 0.35 * r, Math.min(job.len, est + 0.1 * r), est - 0.1 * r, r), 0, job.len);
+    return true;
+  },
+  makeSegment() {
+    for (let guard = 0; guard < 500; guard++) {
+      if (this.sg >= Gem.groups.length) return 'end';
+      const job = Gem.ensure(this.sg);
+      if (!job) return 'end';
+      if (job.state === 'error') return { error: job.error, g: this.sg };
+      if (!this.resolveStart()) return 'wait';
+      const r = job.rate, avail = job.len;
+      if (this.sp >= avail) {
+        if (job.done) {
+          this.sg++; this.sp = 0; this.targetUnit = -1;
+          const nx = Gem.jobs[this.sg];
+          if (!nx || !nx.done) this.first = true;
+          continue;
+        }
+        return 'wait';
+      }
+      const minL = (this.first ? 0.5 : 2) * r, tgt = (this.first ? 1 : 6) * r, maxL = (this.first ? 2.2 : 12) * r;
+      const remain = avail - this.sp;
+      let end;
+      if (job.done && remain <= maxL * 1.25) end = avail;
+      else if (!job.done && remain < tgt + 0.4 * r) return 'wait';
+      else end = findQuietCut(job.buf, this.sp + minL, Math.min(this.sp + maxL, avail - 0.2 * r), this.sp + tgt, r);
+      if (end <= this.sp) end = Math.min(avail, this.sp + Math.round(tgt));
+      const seg = { g: this.sg, start: this.sp, end };
+      this.sp = end;
+      this.first = false;
+      return seg;
+    }
+    return 'wait';
+  },
+  load(i, seg) {
+    const job = Gem.jobs[seg.g];
+    const url = URL.createObjectURL(makeWavBlob([segmentPcm(job.buf, seg.start, seg.end, job.rate)], job.rate));
+    const el = this.els[i];
+    if (this.urls[i]) URL.revokeObjectURL(this.urls[i]);
+    this.urls[i] = url;
+    el.src = url;
+    el.defaultPlaybackRate = this.rate;
+    el.playbackRate = this.rate;
+  },
+  playEl(i) {
+    const el = this.els[i];
+    el.defaultPlaybackRate = this.rate;
+    el.playbackRate = this.rate;
+    const p = el.play();
+    if (p && p.catch) p.catch((err) => {
+      if (err && err.name === 'NotAllowedError') { this.playing = false; Ctl.onAutoplayBlocked(); }
+    });
+  },
+  advance() {
+    if (!this.playing || this.active) return;
+    const seg = this.makeSegment();
+    if (seg === 'wait') { this.waiting = true; Ctl.onGeminiWaiting(); return; }
+    this.waiting = false;
+    if (seg === 'end') { this.playing = false; Ctl.onEnd(); return; }
+    if (seg.error) {
+      const grp = Gem.groups[seg.g];
+      const unit = this.targetUnit >= grp.u0 && this.targetUnit < grp.u1 ? this.targetUnit : grp.u0;
+      this.playing = false;
+      Ctl.onGeminiError(seg.error, unit);
+      return;
+    }
+    this.load(this.cur, seg);
+    this.active = seg;
+    this.playEl(this.cur);
+    this.onSegStart(seg);
+    this.prepareNext();
+  },
+  prepareNext() {
+    if (!this.playing || !this.active || this.prepared || this.preparedEnd) return;
+    const seg = this.makeSegment();
+    if (seg === 'wait' || (seg && seg.error)) return;
+    if (seg === 'end') { this.preparedEnd = true; return; }
+    this.load(1 - this.cur, seg);
+    this.prepared = seg;
+  },
+  onEnded(i) {
+    if (i !== this.cur || !this.active) return;
+    this.active = null;
+    if (!this.playing) return;
+    if (this.prepared) {
+      this.cur = 1 - this.cur;
+      this.active = this.prepared;
+      this.prepared = null;
+      this.playEl(this.cur);
+      this.onSegStart(this.active);
+      this.prepareNext();
+    } else if (this.preparedEnd) {
+      this.preparedEnd = false;
+      this.playing = false;
+      Ctl.onEnd();
+    } else this.advance();
+  },
+  onSegStart(seg) {
+    if (seg.g !== this.lastGroup) { this.lastGroup = seg.g; Gem.ensure(seg.g + 1); }
+    if (seg.g !== this.floorGroup) this.floor = -1;
+    Ctl.onGeminiPlaying();
+  },
+  onJobProgress() {
+    if (!this.playing) return;
+    if (this.waiting && !this.active) this.advance();
+    else if (this.active && !this.prepared && !this.preparedEnd) this.prepareNext();
+  },
+  pause() {
+    this.playing = false;
+    if (this.active) this.els[this.cur].pause();
+  },
+  resume() {
+    this.playing = true;
+    const el = this.els[this.cur];
+    if (this.active && !el.ended) this.playEl(this.cur);
+    else { this.active = null; this.advance(); }
+  },
+  halt() {
+    this.playing = false; this.waiting = false; this.active = null; this.prepared = null; this.preparedEnd = false;
+    for (let i = 0; i < this.els.length; i++) {
+      const el = this.els[i];
+      try { el.pause(); } catch (e) {}
+      el.removeAttribute('src');
+      try { el.load(); } catch (e) {}
+      if (this.urls[i]) { URL.revokeObjectURL(this.urls[i]); this.urls[i] = null; }
+    }
+  },
+  setRate(r) {
+    this.rate = r;
+    for (const el of this.els) { el.defaultPlaybackRate = r; el.playbackRate = r; }
+  },
+  position() {
+    if (!this.active) return null;
+    const job = Gem.jobs[this.active.g];
+    if (!job) return null;
+    return { g: this.active.g, sample: this.active.start + Math.round((this.els[this.cur].currentTime || 0) * job.rate) };
+  },
+};
+let uiQueued = false;
+function notifyJob() {
+  Player.onJobProgress();
+  if (!uiQueued) { uiQueued = true; requestAnimationFrame(() => { uiQueued = false; updateSave(); updateEngineTag(); }); }
+}
+
+/* =====================================================================
+   Browser speech (Web Speech API)
+   ===================================================================== */
+let bVoices = [];
+function voiceLabel(v) {
+  let n = v.name.replace(/^Microsoft\s+/i, '');
+  n = n.replace(/\s+Online\s+\(Natural\)/i, ' · ธรรมชาติ').replace(/\s+-\s+.*$/, '');
+  return n + ' (' + v.lang + ')';
+}
+function voiceScore(v) {
+  return (/^th/i.test(v.lang) ? 100 : 0) + (/natural|neural|online/i.test(v.name) ? 20 : 0) +
+    (/premwadee/i.test(v.name) ? 6 : 0) + (/niwat/i.test(v.name) ? 5 : 0) + (v.default ? 1 : 0);
+}
+function loadBrowserVoices() {
+  const sel = $('bVoice'), hint = $('bHint');
+  if (!('speechSynthesis' in window)) { sel.disabled = true; hint.textContent = 'เบราว์เซอร์นี้ไม่มีระบบอ่านออกเสียง ลองเปิดไฟล์นี้ด้วย Microsoft Edge'; return; }
+  const vs = speechSynthesis.getVoices();
+  if (!vs.length) {
+    if (!sel.options.length) { const o = document.createElement('option'); o.value = ''; o.textContent = 'เสียงเริ่มต้นของเบราว์เซอร์'; sel.appendChild(o); }
+    hint.textContent = 'กำลังโหลดรายชื่อเสียง… ถ้าไม่ขึ้นเลย ให้เปิดไฟล์นี้ด้วย Microsoft Edge';
+    return;
+  }
+  bVoices = vs.slice().sort((a, b) => voiceScore(b) - voiceScore(a) || a.lang.localeCompare(b.lang) || a.name.localeCompare(b.name));
+  sel.textContent = '';
+  const th = document.createElement('optgroup'); th.label = 'ภาษาไทย';
+  const other = document.createElement('optgroup'); other.label = 'ภาษาอื่น';
+  for (const v of bVoices) {
+    const o = document.createElement('option');
+    o.value = v.name; o.textContent = voiceLabel(v);
+    (/^th/i.test(v.lang) ? th : other).appendChild(o);
+  }
+  if (th.children.length) sel.appendChild(th);
+  if (other.children.length) sel.appendChild(other);
+  const want = bVoices.find((v) => v.name === prefs.bVoice) || bVoices[0];
+  sel.value = want.name;
+  const hasTh = bVoices.some((v) => /^th/i.test(v.lang));
+  const hasThNatural = bVoices.some((v) => /^th/i.test(v.lang) && /natural|neural|online/i.test(v.name));
+  hint.textContent = !hasTh
+    ? 'ไม่พบเสียงภาษาไทยในเบราว์เซอร์นี้ เปิดไฟล์นี้ด้วย Microsoft Edge จะได้เสียง Premwadee และ Niwat'
+    : !hasThNatural
+      ? 'เปิดด้วย Microsoft Edge จะได้เสียงไทยแบบธรรมชาติ (Premwadee, Niwat) ที่ฟังลื่นกว่านี้'
+      : 'เสียงแบบธรรมชาติของ Edge ต้องต่ออินเทอร์เน็ต ใช้ได้ฟรีไม่จำกัด';
+  updateEngineTag();
+}
+function currentBrowserVoice() { const n = $('bVoice').value; return bVoices.find((v) => v.name === n) || null; }
+function browserVoiceName() { const v = currentBrowserVoice(); return v ? voiceLabel(v).replace(/\s*\([^)]*\)$/, '') : 'เสียงเริ่มต้น'; }
+const hasSpeech = () => 'speechSynthesis' in window;
+
+const Browser = {
+  tok: 0, i: 0, offset: 0, lastB: 0, utter: null, startedAt: 0, timer: 0, fails: 0, silent: 0,
+  start(i) {
+    this.tok++;
+    const t = this.tok;
+    try { speechSynthesis.cancel(); } catch (e) {}
+    this.i = i; this.offset = 0; this.lastB = 0; this.fails = 0; this.silent = 0;
+    this.watch();
+    setTimeout(() => { if (t === this.tok) this.speak(); }, 90);
+  },
+  speak() {
+    if (!hasSpeech()) { Ctl.onBrowserFail('not-supported'); return; }
+    const unit = units[this.i];
+    if (!unit) { this.finish(); return; }
+    const text = unit.text.slice(this.offset).replace(/<[^<>]{1,40}>/g, ' ');
+    if (!/[\p{L}\p{N}]/u.test(text)) { this.advance(); return; }
+    const u = new SpeechSynthesisUtterance(text);
+    const v = currentBrowserVoice();
+    if (v) { u.voice = v; u.lang = v.lang; } else u.lang = 'th-TH';
+    u.rate = clamp(prefs.speed || 1, 0.5, 3);
+    u.pitch = 1; u.volume = 1;
+    const t = this.tok, base = this.offset, idx = this.i;
+    this.lastB = base;
+    u.onstart = () => { if (t !== this.tok) return; this.silent = 0; Ctl.onUnit(idx); };
+    u.onboundary = (e) => {
+      if (t !== this.tok || e.name === 'sentence') return;
+      this.silent = 0;
+      this.lastB = base + (e.charIndex || 0);
+      markWord(idx, this.lastB, e.charLength || 0);
+    };
+    u.onend = () => { if (t !== this.tok || u._done) return; u._done = true; this.fails = 0; this.advance(); };
+    u.onerror = (e) => {
+      if (t !== this.tok || u._done) return;
+      u._done = true;
+      const er = e && e.error;
+      if (er === 'interrupted' || er === 'canceled') return;
+      if (er === 'not-allowed') { Ctl.onAutoplayBlocked(); return; }
+      if (++this.fails > 2) { Ctl.onBrowserFail(er || 'error'); return; }
+      this.advance();
+    };
+    this.utter = u;
+    this.startedAt = performance.now();
+    Ctl.onUnit(idx);
+    speechSynthesis.speak(u);
+  },
+  advance() {
+    clearWord();
+    this.i++; this.offset = 0; this.lastB = 0;
+    if (this.i >= units.length) { this.finish(); return; }
+    this.speak();
+  },
+  finish() { this.utter = null; clearWord(); Ctl.onEnd(); },
+  pause() { this.tok++; this.offset = Math.max(this.offset, this.lastB); this.utter = null; try { speechSynthesis.cancel(); } catch (e) {} },
+  resume() {
+    this.tok++;
+    const t = this.tok;
+    try { speechSynthesis.cancel(); } catch (e) {}
+    this.watch();
+    setTimeout(() => { if (t === this.tok) this.speak(); }, 60);
+  },
+  stop() { this.tok++; this.utter = null; try { if (hasSpeech()) speechSynthesis.cancel(); } catch (e) {} clearWord(); },
+  setRate() { if (Ctl.engine === 'browser' && Ctl.mode === 'playing') { this.pause(); this.resume(); } },
+  /* some voices never fire "end": if nothing is queued any more, move on; if that keeps happening, the voice is broken */
+  watch() {
+    if (this.timer) return;
+    this.timer = setInterval(() => {
+      const u = this.utter;
+      if (Ctl.mode !== 'playing' || Ctl.engine !== 'browser' || !u || u._done) return;
+      if (!speechSynthesis.speaking && !speechSynthesis.pending && performance.now() - this.startedAt > 2000) {
+        u._done = true;
+        if (++this.silent > 2) { Ctl.onBrowserFail('no-audio'); return; }
+        this.advance();
+      }
+    }, 700);
+  },
+};
+
+/* =====================================================================
+   Reading view + controller
+   ===================================================================== */
+let units = [];
+let spans = [];
+const HL = (typeof CSS !== 'undefined' && CSS.highlights && typeof Highlight === 'function') ? new Highlight() : null;
+if (HL) { try { CSS.highlights.set('spoken-word', HL); } catch (e) {} }
+
+function renderReader() {
+  const root = $('reader');
+  root.textContent = '';
+  spans = [];
+  let p = null, para = -1;
+  units.forEach((u, i) => {
+    if (u.para !== para) { p = document.createElement('p'); root.appendChild(p); para = u.para; }
+    const s = document.createElement('span');
+    s.className = 'u'; s.dataset.i = String(i); s.textContent = u.text;
+    p.appendChild(s);
+    spans.push(s);
+    const nx = units[i + 1];
+    if (nx && nx.para === u.para && u.sp) p.appendChild(document.createTextNode(' '));
+  });
+}
+function setCurrent(i, opts) {
+  i = clamp(i, 0, Math.max(0, units.length - 1));
+  Ctl.cur = i;
+  for (let k = 0; k < spans.length; k++) {
+    spans[k].classList.toggle('done', k < i);
+    spans[k].classList.toggle('now', k === i);
+  }
+  if (spans[i] && !(opts && opts.scroll === false)) keepVisible(spans[i]);
+  clearWord();
+  updateProgress();
+}
+function keepVisible(el) {
+  if ($('reader').hidden) return;
+  const r = el.getBoundingClientRect();
+  const bar = $('transport').getBoundingClientRect().height || 0;
+  if (r.top < 70 || r.bottom > window.innerHeight - bar - 20) el.scrollIntoView({ block: 'center', behavior: reduceMotion ? 'auto' : 'smooth' });
+}
+function markWord(i, start, len) {
+  if (!HL) return;
+  HL.clear();
+  const s = spans[i];
+  const node = s && s.firstChild;
+  if (!node || node.nodeType !== 3) return;
+  const L = node.length;
+  if (start >= L) return;
+  if (!len) len = wordLenAt(node.data, start);
+  try { const r = new Range(); r.setStart(node, clamp(start, 0, L)); r.setEnd(node, clamp(start + len, 0, L)); HL.add(r); } catch (e) {}
+}
+function clearWord() { if (HL) HL.clear(); }
+function showReader(on) {
+  $('txt').hidden = on;
+  $('reader').hidden = !on;
+  $('btnEdit').hidden = !on;
+  $('btnClear').hidden = on;
+}
+function updateProgress() {
+  const n = units.length;
+  $('tPos').textContent = n ? 'ประโยค ' + fmtNum(Math.min(Ctl.cur + 1, n)) + ' / ' + fmtNum(n) : ($('txt').value.trim() ? 'พร้อมอ่าน' : 'ยังไม่มีข้อความ');
+  $('tBar').style.width = !n ? '0%' : (Ctl.finished ? '100%' : ((Ctl.cur / n) * 100).toFixed(2) + '%');
+}
+
+let hlTimer = 0;
+function startHl() { if (!hlTimer) hlTimer = setTimeout(hlTick, 100); }
+function stopHl() { if (hlTimer) { clearTimeout(hlTimer); hlTimer = 0; } }
+function hlTick() {
+  hlTimer = 0;
+  if (Ctl.engine !== 'gemini' || Ctl.mode !== 'playing') return;
+  const p = Player.position();
+  if (p) {
+    let u = Gem.unitAt(p.g, p.sample);
+    if (Player.floor >= 0 && p.g === Player.floorGroup) u = Math.max(u, Player.floor);
+    if (u !== Ctl.cur) setCurrent(u);
+  }
+  hlTimer = setTimeout(hlTick, 120);
+}
+
+const Ctl = {
+  mode: 'idle', engine: 'browser', cur: 0, finished: false, pausedJump: false, fallback: false, sig: '',
+  setMode(m, msg) {
+    this.mode = m;
+    const playing = m === 'playing' || m === 'loading';
+    const btn = $('tPlay');
+    btn.classList.toggle('is-loading', m === 'loading');
+    btn.setAttribute('aria-label', playing ? 'พัก' : (m === 'paused' ? 'อ่านต่อ' : 'อ่าน'));
+    $('icoPlay').toggleAttribute('hidden', playing);
+    $('icoPause').toggleAttribute('hidden', !playing);
+    const def = {
+      idle: this.finished ? 'อ่านจบแล้ว · กดเล่นเพื่อฟังอีกรอบ' : 'พร้อม · กด Ctrl+V หรือปุ่มเล่น',
+      loading: Player.lastGroup >= 0 ? 'กำลังสร้างเสียงช่วงถัดไป…' : 'กำลังสร้างเสียงด้วย Gemini…',
+      playing: 'กำลังอ่าน',
+      paused: 'พักอยู่ · กด Space เพื่ออ่านต่อ',
+    }[m];
+    this.status(msg || def);
+    if (m === 'playing' && this.engine === 'gemini') startHl(); else if (m !== 'playing') stopHl();
+    updateProgress();
+    updateEngineTag();
+    updateSave();
+  },
+  status(msg) { const s = $('tStatus'); s.textContent = msg || ''; s.title = msg || ''; },
+  onUnit(i) { if (this.engine === 'browser' && i !== this.cur) setCurrent(i); },
+  onEnd() {
+    stopHl();
+    this.finished = true;
+    for (const s of spans) { s.classList.remove('now'); s.classList.add('done'); }
+    clearWord();
+    this.setMode('idle');
+  },
+  onGeminiWaiting() { if (this.mode === 'playing' || this.mode === 'loading') this.setMode('loading'); },
+  onGeminiPlaying() { if (this.mode !== 'playing') this.setMode('playing'); },
+  onGeminiError(err, unit) {
+    stopHl();
+    Gem.dropQueued([]);
+    const msg = thaiError(err);
+    if (err instanceof ApiError && err.status === 429 && prefs.gFallback && hasSpeech()) {
+      this.engine = 'browser';
+      this.fallback = true;
+      setCurrent(unit);
+      this.setMode('playing', 'อ่านต่อด้วยเสียง ' + browserVoiceName());
+      Browser.start(unit);
+      banner('warn', msg + ' จึงอ่านต่อด้วยเสียง Edge ให้ · โควตารายวันของ Gemini รีเซ็ตเวลา ' + resetTimeText() + ' น.',
+        [{ label: 'ดูโควตาใน AI Studio', href: 'https://aistudio.google.com/rate-limit' }]);
+      return;
+    }
+    setCurrent(unit);
+    this.pausedJump = true;
+    this.setMode('paused', msg);
+    const acts = [{ label: 'ลองอีกครั้ง', fn: () => startReading(unit) }];
+    if (isKeyError(err)) acts.unshift({ label: 'แก้ไข API key', fn: () => { $('gKey').focus(); $('gKey').select(); } });
+    if (hasSpeech()) acts.push({ label: 'อ่านด้วยเสียง Edge แทน', fn: () => { setEngine('browser'); startReading(unit); } });
+    banner('err', msg, acts);
+  },
+  onAutoplayBlocked() {
+    stopHl();
+    this.setMode('paused', 'กดปุ่มเล่นเพื่อเริ่มเสียง');
+    banner('info', 'เบราว์เซอร์รอให้กดปุ่มก่อนเล่นเสียง กดปุ่มเล่นด้านล่างได้เลย');
+  },
+  onBrowserFail(code) {
+    Browser.stop();
+    this.pausedJump = true;
+    this.setMode('paused', 'เสียงของเบราว์เซอร์ไม่ทำงาน');
+    banner('err', 'เสียงของเบราว์เซอร์ไม่ทำงาน (' + code + ') ลองเลือกเสียงอื่น หรือเปิดไฟล์นี้ด้วย Microsoft Edge',
+      [{ label: 'ลองอีกครั้ง', fn: () => startReading(this.cur) }]);
+  },
+};
+
+function textOpts() { return { md: !!prefs.oMd, emoji: !!prefs.oEmoji, links: !!prefs.oLinks, code: !!prefs.oCode }; }
+function currentSig() { return JSON.stringify(textOpts()) + '\u0000' + cleanForSpeech($('txt').value, textOpts()); }
+function haltAll() { Player.halt(); Browser.stop(); stopHl(); }
+function ensureSession() {
+  const sig = currentSig();
+  if (sig === Ctl.sig && units.length) return true;
+  haltAll();
+  Ctl.sig = sig;
+  units = splitUnits(sig.slice(sig.indexOf('\u0000') + 1), 200);
+  Ctl.cur = 0;
+  Ctl.finished = false;
+  renderReader();
+  return units.length > 0;
+}
+function geminiCfg() {
+  return { key: (prefs.gKey || '').trim(), model: prefs.gModel, voice: (prefs.gVoice || 'Fola').trim() || 'Fola', style: (prefs.gStyle || '').trim(), stream: !!prefs.gStream };
+}
+function startReading(from) {
+  clearBanner();
+  if (!ensureSession()) {
+    showReader(false);
+    Ctl.setMode('idle');
+    banner('info', 'ยังไม่มีข้อความให้อ่าน วางข้อความในช่อง หรือกด Ctrl+V');
+    return;
+  }
+  showReader(true);
+  haltAll();
+  from = clamp(from || 0, 0, units.length - 1);
+  Ctl.finished = false;
+  Ctl.pausedJump = false;
+  Ctl.fallback = false;
+  if (prefs.engine === 'gemini') {
+    const cfg = geminiCfg();
+    if (!cfg.key) {
+      Ctl.engine = 'gemini';
+      setCurrent(from, { scroll: false });
+      Ctl.pausedJump = true;
+      Ctl.setMode('idle', 'ใส่ API key ของ Gemini ก่อน');
+      banner('info', 'ใส่ API key ของ Gemini ก่อน (ขอฟรีได้ที่ AI Studio) หรือจะฟังด้วยเสียง Edge ไปก่อนก็ได้', [
+        { label: 'ไปที่ช่องใส่คีย์', fn: () => $('gKey').focus() },
+        { label: 'ขอคีย์ฟรี', href: 'https://aistudio.google.com/apikey' },
+        { label: 'อ่านด้วยเสียง Edge', fn: () => { setEngine('browser'); startReading(from); } },
+      ]);
+      return;
+    }
+    Ctl.engine = 'gemini';
+    const gsig = Ctl.sig + '\u0000' + [cfg.model, cfg.voice, cfg.style, cfg.stream].join('|');
+    if (Gem.sig !== gsig) Gem.setup(units, cfg, gsig);
+    else { Gem.cfg = cfg; Gem.clearErrors(); }
+    setCurrent(from);
+    Ctl.setMode('loading');
+    Player.startAt(Gem.unitGroup[from], from);
+  } else {
+    Ctl.engine = 'browser';
+    setCurrent(from);
+    Ctl.setMode('playing');
+    Browser.start(from);
+  }
+}
+function pauseReading() {
+  if (Ctl.engine === 'gemini') Player.pause(); else Browser.pause();
+  stopHl();
+  Ctl.setMode('paused');
+}
+function resumeReading() {
+  if (Ctl.engine === 'gemini') { Player.resume(); Ctl.setMode(Player.active ? 'playing' : 'loading'); }
+  else { Ctl.setMode('playing'); Browser.resume(); }
+}
+function togglePlay() {
+  if (Ctl.mode === 'playing' || Ctl.mode === 'loading') { pauseReading(); return; }
+  if (Ctl.mode === 'paused' && !Ctl.pausedJump && currentSig() === Ctl.sig && (Ctl.engine === prefs.engine || Ctl.fallback)) { resumeReading(); return; }
+  const same = currentSig() === Ctl.sig;
+  startReading(same && !Ctl.finished ? Ctl.cur : 0);
+}
+function stopReading() {
+  haltAll();
+  Gem.dropQueued([]);
+  Ctl.finished = false;
+  Ctl.pausedJump = false;
+  Ctl.setMode('idle');
+  if (units.length) setCurrent(0, { scroll: false });
+}
+function jumpTo(i) {
+  if (!units.length || $('reader').hidden) return;
+  i = clamp(i, 0, units.length - 1);
+  if (Ctl.mode === 'playing' || Ctl.mode === 'loading') {
+    setCurrent(i);
+    if (Ctl.engine === 'gemini') { Ctl.setMode('loading'); Player.startAt(Gem.unitGroup[i], i); }
+    else Browser.start(i);
+  } else {
+    Ctl.finished = false;
+    setCurrent(i);
+    if (Ctl.mode === 'paused') Ctl.pausedJump = true;
+  }
+}
+function setEngine(e) {
+  const wasActive = Ctl.mode === 'playing' || Ctl.mode === 'loading';
+  const at = Ctl.cur;
+  prefs.engine = e;
+  savePrefs();
+  $('engBrowser').setAttribute('aria-pressed', String(e === 'browser'));
+  $('engGemini').setAttribute('aria-pressed', String(e === 'gemini'));
+  $('secBrowser').hidden = e !== 'browser';
+  $('secGemini').hidden = e !== 'gemini';
+  if (wasActive && Ctl.engine !== e) { haltAll(); startReading(at); }
+  else if (Ctl.mode === 'paused') Ctl.pausedJump = true;
+  updateEngineTag();
+  updateSave();
+}
+
+/* ---------- banner ---------- */
+function banner(kind, text, actions) {
+  const slot = $('banner');
+  slot.textContent = '';
+  const box = document.createElement('div');
+  box.className = 'banner ' + kind;
+  box.setAttribute('role', kind === 'err' ? 'alert' : 'status');
+  const p = document.createElement('div');
+  p.textContent = text;
+  box.appendChild(p);
+  if (actions && actions.length) {
+    const row = document.createElement('div');
+    row.className = 'banner-acts';
+    for (const a of actions) {
+      let el;
+      if (a.href) { el = document.createElement('a'); el.href = a.href; el.target = '_blank'; el.rel = 'noopener'; }
+      else { el = document.createElement('button'); el.type = 'button'; el.addEventListener('click', () => { clearBanner(); a.fn(); }); }
+      el.className = 'bact';
+      el.textContent = a.label;
+      row.appendChild(el);
+    }
+    box.appendChild(row);
+  }
+  const x = document.createElement('button');
+  x.type = 'button'; x.className = 'bx'; x.setAttribute('aria-label', 'ปิดข้อความนี้'); x.textContent = '×';
+  x.addEventListener('click', clearBanner);
+  box.appendChild(x);
+  slot.appendChild(box);
+  slot.hidden = false;
+}
+function clearBanner() { const s = $('banner'); s.textContent = ''; s.hidden = true; }
+
+/* ---------- small UI pieces ---------- */
+function updateMeta() {
+  const n = cleanForSpeech($('txt').value, textOpts()).replace(/\s+/g, '').length;
+  $('meta').textContent = n ? fmtNum(n) + ' ตัวอักษร · ฟังราว ' + fmtClock(n / (12.5 * (prefs.speed || 1))) + ' นาที' : 'ยังไม่มีข้อความ';
+}
+function updateEngineTag() {
+  const eng = Ctl.mode !== 'idle' ? Ctl.engine : prefs.engine;
+  const el = $('tEngine');
+  if (eng === 'gemini') {
+    const j = Gem.jobs.find((x) => x && x.len);
+    el.textContent = 'Gemini · ' + (prefs.gVoice || 'Fola') + (j ? ' · ' + Math.round(j.rate / 1000) + ' kHz' : '');
+  } else el.textContent = 'Edge · ' + browserVoiceName();
+}
+function updateSave() {
+  const has = Gem.jobs.some((j) => j && j.len > 0);
+  const b = $('tSave');
+  b.disabled = !has;
+  b.title = has ? 'บันทึกเสียงที่สร้างแล้วเป็นไฟล์ .wav' : 'บันทึกได้เมื่อใช้เสียง Gemini';
+}
+function saveWav() {
+  const parts = [];
+  let rate = 24000, secs = 0;
+  for (const j of Gem.jobs) {
+    if (!j || !j.len) break;
+    parts.push(j.buf.subarray(0, j.len));
+    rate = j.rate; secs += j.len / j.rate;
+    if (!j.done) break;
+  }
+  if (!parts.length) return;
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(makeWavBlob(parts, rate));
+  const d = new Date(), z = (n) => String(n).padStart(2, '0');
+  a.download = 'อ่านให้ฟัง-' + d.getFullYear() + z(d.getMonth() + 1) + z(d.getDate()) + '-' + z(d.getHours()) + z(d.getMinutes()) + '.wav';
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 5000);
+  Ctl.status('บันทึกไฟล์เสียงยาว ' + fmtClock(secs) + ' นาทีแล้ว');
+}
+
+/* daily quota resets at midnight US Pacific time */
+function laOffsetMin(d) {
+  const f = new Intl.DateTimeFormat('en-US', { timeZone: 'America/Los_Angeles', hourCycle: 'h23', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  const p = {};
+  for (const x of f.formatToParts(d)) p[x.type] = x.value;
+  return Math.round((Date.UTC(+p.year, +p.month - 1, +p.day, +p.hour % 24, +p.minute, +p.second) - d.getTime()) / 60000);
+}
+function nextQuotaReset(now) {
+  now = now || new Date();
+  const off = laOffsetMin(now);
+  const la = new Date(now.getTime() + off * 60000);
+  const wall = Date.UTC(la.getUTCFullYear(), la.getUTCMonth(), la.getUTCDate() + 1, 0, 0, 0);
+  let t = wall - off * 60000;
+  const off2 = laOffsetMin(new Date(t));
+  if (off2 !== off) t = wall - off2 * 60000;
+  return new Date(t);
+}
+function pacificDay(d) { return new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Los_Angeles', year: 'numeric', month: '2-digit', day: '2-digit' }).format(d || new Date()); }
+function resetTimeText() { try { return nextQuotaReset().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }); } catch (e) { return '14:00'; } }
+const Usage = {
+  get() { const day = pacificDay(); const u = readJSON(K_USAGE, null); return u && u.day === day ? u : { day, n: 0 }; },
+  bump() { const u = this.get(); u.n += 1; writeJSON(K_USAGE, u); renderQuota(); },
+};
+function renderQuota() { $('gUsed').textContent = fmtNum(Usage.get().n); $('gReset').textContent = resetTimeText(); }
+
+/* ---------- Gemini settings ---------- */
+const GEMINI_VOICES = [
+  ['Fola', 'ชัด เป็นมิตร · เสียงที่ใช้ใน AI Studio'],
+  ['Zephyr', 'สดใส'], ['Puck', 'กระฉับกระเฉง'], ['Charon', 'ให้ข้อมูล'], ['Kore', 'หนักแน่น'], ['Fenrir', 'ตื่นเต้น'],
+  ['Leda', 'วัยรุ่น'], ['Orus', 'หนักแน่น'], ['Aoede', 'โปร่ง สบาย'], ['Callirrhoe', 'สบาย ๆ'], ['Autonoe', 'สดใส'],
+  ['Enceladus', 'มีลมหายใจ'], ['Iapetus', 'ชัดเจน'], ['Umbriel', 'สบาย ๆ'], ['Algieba', 'นุ่มนวล'], ['Despina', 'นุ่มนวล'],
+  ['Erinome', 'ชัดเจน'], ['Algenib', 'แหบเข้ม'], ['Rasalgethi', 'ให้ข้อมูล'], ['Laomedeia', 'กระฉับกระเฉง'], ['Achernar', 'นุ่ม'],
+  ['Alnilam', 'หนักแน่น'], ['Schedar', 'เรียบ สม่ำเสมอ'], ['Gacrux', 'เป็นผู้ใหญ่'], ['Pulcherrima', 'ตรงไปตรงมา'], ['Achird', 'เป็นมิตร'],
+  ['Zubenelgenubi', 'เป็นกันเอง'], ['Vindemiatrix', 'อ่อนโยน'], ['Sadachbia', 'มีชีวิตชีวา'], ['Sadaltager', 'รอบรู้'], ['Sulafat', 'อบอุ่น'],
+];
+const STYLES = [
+  ['ไม่กำหนด', ''],
+  ['สดใส', 'bright, sunny and cheerful'],
+  ['อ่านข่าว', 'clear, confident news anchor'],
+  ['เล่าเรื่อง', 'warm storytelling, relaxed pace'],
+  ['ช้า ชัด', 'speaking slowly and clearly'],
+  ['เร็วขึ้น', 'speaking a bit faster, energetic'],
+];
+function fillGeminiVoices(list) {
+  const sel = $('gVoice');
+  sel.textContent = '';
+  const ids = new Set();
+  const add = (parent, id, label) => {
+    if (!id || ids.has(id)) return;
+    ids.add(id);
+    const o = document.createElement('option');
+    o.value = id; o.textContent = label;
+    parent.appendChild(o);
+  };
+  if (prefs.gVoice && !list.some((v) => v.id === prefs.gVoice)) add(sel, prefs.gVoice, prefs.gVoice);
+  let group = null, last = null;
+  for (const v of list) {
+    if (v.group && v.group !== last) { group = document.createElement('optgroup'); group.label = v.group; sel.appendChild(group); last = v.group; }
+    add(group || sel, v.id, v.label);
+  }
+  sel.value = prefs.gVoice;
+  if (sel.value !== prefs.gVoice && sel.options.length) { sel.selectedIndex = 0; prefs.gVoice = sel.value; }
+}
+function defaultGeminiVoiceList() { return GEMINI_VOICES.map(([id, d]) => ({ id, label: id + ' — ' + d, group: 'เสียงหลัก' })); }
+async function loadGeminiVoices() {
+  const cfg = geminiCfg(), hint = $('gVoiceHint');
+  if (!cfg.key) { hint.textContent = 'ใส่ API key ก่อน แล้วค่อยโหลดรายชื่อเสียงทั้งหมด'; return; }
+  hint.textContent = 'กำลังโหลดรายชื่อเสียง…';
+  try {
+    let all = [], token = '';
+    for (let page = 0; page < 5; page++) {
+      const u = new URL(API + '/voices');
+      u.searchParams.set('page_size', '1000');
+      if (token) u.searchParams.set('page_token', token);
+      const res = await fetch(u.toString(), { headers: { 'x-goog-api-key': cfg.key } });
+      if (!res.ok) throw await toApiError(res);
+      const j = await res.json();
+      all = all.concat(Array.isArray(j.voices) ? j.voices : []);
+      token = j.next_page_token || j.nextPageToken || '';
+      if (!token) break;
+    }
+    const lang = (v) => v.language_code || v.languageCode || '';
+    const name = (v) => v.display_name || v.displayName || v.id || '';
+    const isTh = (v) => /^th/i.test(lang(v));
+    const typ = (v) => String(v.type || '').toLowerCase();
+    const groupOf = (v) => (typ(v) === 'prompted' || typ(v) === 'replicated') ? 'เสียงที่สร้างเอง' : (isTh(v) ? 'ภาษาไทย' : 'ภาษาอื่น');
+    const order = { 'เสียงที่สร้างเอง': 0, 'ภาษาไทย': 1, 'ภาษาอื่น': 2 };
+    all.sort((a, b) => order[groupOf(a)] - order[groupOf(b)] || String(name(a)).localeCompare(String(name(b))));
+    const list = all.filter((v) => v.id || v.key).map((v) => ({
+      id: v.id || v.key,
+      label: [name(v), v.description, lang(v), v.gender].filter(Boolean).join(' · '),
+      group: groupOf(v),
+    }));
+    if (!list.length) throw new Error('ไม่พบรายชื่อเสียง');
+    fillGeminiVoices(list);
+    const nTh = all.filter(isTh).length;
+    hint.textContent = 'โหลดแล้ว ' + fmtNum(list.length) + ' เสียง' + (nTh ? ' · ภาษาไทย ' + fmtNum(nTh) + ' เสียงอยู่ด้านบน' : '');
+  } catch (err) { hint.textContent = thaiError(err); }
+}
+function setKeyState(kind, msg) { const el = $('gKeyState'); el.className = 'state' + (kind ? ' ' + kind : ''); el.textContent = msg; }
+async function testKey() {
+  const cfg = geminiCfg();
+  if (!cfg.key) { setKeyState('err', 'ยังไม่ได้ใส่คีย์'); return; }
+  setKeyState('', 'กำลังตรวจ…');
+  try {
+    const res = await fetch(API + '/models/' + encodeURIComponent(cfg.model), { headers: { 'x-goog-api-key': cfg.key } });
+    if (!res.ok) throw await toApiError(res);
+    const j = await res.json().catch(() => ({}));
+    setKeyState('ok', 'ใช้ได้ · พบ ' + (j.displayName || j.display_name || cfg.model));
+  } catch (err) { setKeyState('err', thaiError(err)); }
+}
+let previewEl = null, previewUrl = null;
+async function previewGemini() {
+  const cfg = geminiCfg(), hint = $('gVoiceHint'), btn = $('gPreview');
+  if (!cfg.key) { hint.textContent = 'ใส่ API key ก่อน'; $('gKey').focus(); return; }
+  if (Ctl.mode === 'playing' || Ctl.mode === 'loading') pauseReading();
+  const text = 'สวัสดี นี่คือตัวอย่างเสียงที่จะใช้อ่านข้อความให้ฟัง';
+  const key = ['preview', cfg.model, cfg.voice, cfg.style, text].join('␞');
+  btn.disabled = true;
+  hint.textContent = 'กำลังสร้างเสียงตัวอย่าง…';
+  try {
+    let job = GemCache.get(key);
+    if (!job) {
+      job = new PcmJob(key);
+      let got = 0;
+      await ttsWithRetry(text, cfg, { stream: false, onAudio: (b, m) => { got++; job.pushBase64(b, m); }, gotAudio: () => got > 0 }, (s) => sleep(s * 1000));
+      job.finish();
+      GemCache.put(job);
+      Usage.bump();
+    }
+    if (!previewEl) previewEl = new Audio();
+    if (previewUrl) URL.revokeObjectURL(previewUrl);
+    previewUrl = URL.createObjectURL(makeWavBlob([job.buf.subarray(0, job.len)], job.rate));
+    previewEl.src = previewUrl;
+    await previewEl.play();
+    hint.textContent = 'นี่คือเสียง ' + cfg.voice + (cfg.style ? ' สไตล์ "' + cfg.style + '"' : '') + ' · ฟังซ้ำไม่เสียโควตาเพิ่ม';
+  } catch (err) { hint.textContent = thaiError(err); }
+  finally { btn.disabled = false; }
+}
+function buildChips() {
+  const box = $('styleChips');
+  box.textContent = '';
+  for (const [label, val] of STYLES) {
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'chip'; b.textContent = label; b.dataset.v = val;
+    b.title = val || 'ไม่ใส่สไตล์ ให้โมเดลอ่านตามธรรมชาติ';
+    b.addEventListener('click', () => { $('gStyle').value = val; prefs.gStyle = val; savePrefs(); syncChips(); geminiCfgChanged(true); });
+    box.appendChild(b);
+  }
+  syncChips();
+}
+function syncChips() {
+  const v = $('gStyle').value.trim();
+  for (const b of $('styleChips').children) b.setAttribute('aria-pressed', String(b.dataset.v === v));
+}
+/* a new voice, style or model takes effect from the sentence being read */
+function geminiCfgChanged(restartIfPlaying) {
+  if (Ctl.engine !== 'gemini') return;
+  if (restartIfPlaying && (Ctl.mode === 'playing' || Ctl.mode === 'loading')) startReading(Ctl.cur);
+  else if (Ctl.mode === 'paused') Ctl.pausedJump = true;
+}
+function modelHint() {
+  const m = prefs.gModel;
+  $('gModelHint').textContent = /lite/i.test(m)
+    ? 'Flash-Lite ยังไม่รองรับภาษาไทย ใช้กับข้อความภาษาอังกฤษ'
+    : isLegacyModel(m)
+      ? 'รุ่นเก่า มีโควตาแยกจากรุ่น 3.8 เก็บไว้ใช้ตอนโควตาหลักหมด'
+      : 'รุ่นเดียวกับที่ใช้ใน AI Studio รองรับภาษาไทย';
+}
+
+/* ---------- text box ---------- */
+let textSaveTimer = 0, metaTimer = 0;
+const isSample = () => $('txt').value === SAMPLE;
+function onTextInput(save) {
+  $('sampleTag').hidden = !isSample();
+  if (Ctl.mode === 'idle' && units.length) { units = []; spans = []; Ctl.sig = ''; Ctl.finished = false; $('reader').textContent = ''; }
+  updateProgress();
+  clearTimeout(metaTimer);
+  metaTimer = setTimeout(updateMeta, 150);
+  if (save !== false) {
+    clearTimeout(textSaveTimer);
+    textSaveTimer = setTimeout(() => { const v = $('txt').value; if (v !== SAMPLE) writeJSON(K_TEXT, v.length > 300000 ? v.slice(0, 300000) : v); }, 400);
+  }
+}
+function loadText(text, autoplay) {
+  haltAll();
+  $('txt').value = text;
+  onTextInput();
+  if (autoplay) startReading(0);
+  else { Ctl.setMode('idle'); showReader(false); }
+}
+function htmlToText(html) {
+  if (!html) return '';
+  try { return new DOMParser().parseFromString(html, 'text/html').body.textContent || ''; } catch (e) { return ''; }
+}
+
+/* ---------- wiring ---------- */
+function init() {
+  Player.init();
+  // prefs → controls
+  $('tSpeed').value = String(prefs.speed);
+  if ($('tSpeed').value !== String(prefs.speed)) { prefs.speed = 1; $('tSpeed').value = '1'; }
+  Player.setRate(prefs.speed);
+  $('gKey').value = prefs.gKey || '';
+  $('gRemember').checked = !!prefs.gRemember;
+  $('gModel').value = prefs.gModel;
+  if ($('gModel').value !== prefs.gModel) { prefs.gModel = DEFAULTS.gModel; $('gModel').value = prefs.gModel; }
+  $('gStyle').value = prefs.gStyle;
+  $('gStream').checked = !!prefs.gStream;
+  $('gFallback').checked = !!prefs.gFallback;
+  for (const k of ['oMd', 'oEmoji', 'oLinks', 'oCode', 'oAuto']) $(k).checked = !!prefs[k];
+  fillGeminiVoices(defaultGeminiVoiceList());
+  buildChips();
+  modelHint();
+  $('engBrowser').setAttribute('aria-pressed', String(prefs.engine !== 'gemini'));
+  $('engGemini').setAttribute('aria-pressed', String(prefs.engine === 'gemini'));
+  $('secBrowser').hidden = prefs.engine === 'gemini';
+  $('secGemini').hidden = prefs.engine !== 'gemini';
+  Ctl.engine = prefs.engine;
+
+  const saved = readJSON(K_TEXT, null);
+  $('txt').value = typeof saved === 'string' && saved.trim() ? saved : SAMPLE;
+  onTextInput(false);
+  updateMeta();
+  showReader(false);
+  Ctl.setMode('idle');
+  loadBrowserVoices();
+  if (hasSpeech()) {
+    try { speechSynthesis.addEventListener('voiceschanged', loadBrowserVoices); } catch (e) { speechSynthesis.onvoiceschanged = loadBrowserVoices; }
+  }
+  renderQuota();
+  setInterval(renderQuota, 60000);
+
+  // text
+  $('txt').addEventListener('input', () => onTextInput());
+  $('btnClear').addEventListener('click', () => { haltAll(); $('txt').value = ''; onTextInput(); Ctl.setMode('idle'); clearBanner(); $('txt').focus(); });
+  $('btnEdit').addEventListener('click', () => { stopReading(); showReader(false); $('txt').focus(); });
+  $('btnPaste').addEventListener('click', async () => {
+    try {
+      if (!navigator.clipboard || !navigator.clipboard.readText) throw new Error('no-clipboard');
+      const s = await navigator.clipboard.readText();
+      if (!s || !s.trim()) { banner('info', 'คลิปบอร์ดว่างอยู่ คัดลอกข้อความก่อนแล้วลองใหม่'); return; }
+      loadText(s, true);
+    } catch (err) {
+      banner('info', 'เบราว์เซอร์ไม่อนุญาตให้ปุ่มนี้อ่านคลิปบอร์ด กด Ctrl+V ที่หน้านี้แทนได้เลย');
+    }
+  });
+  $('reader').addEventListener('click', (e) => {
+    const s = e.target instanceof Element ? e.target.closest('.u') : null;
+    if (!s) return;
+    const sel = window.getSelection();
+    if (sel && !sel.isCollapsed) return;
+    const i = +s.dataset.i;
+    if (Ctl.mode === 'playing' || Ctl.mode === 'loading') jumpTo(i); else startReading(i);
+  });
+
+  // paste anywhere = replace text and read
+  document.addEventListener('paste', (e) => {
+    const t = e.target instanceof Element ? e.target : null;
+    if (t && t.closest('input, select, [contenteditable=""], [contenteditable="true"]')) return;
+    const cd = e.clipboardData;
+    const data = cd ? (cd.getData('text/plain') || htmlToText(cd.getData('text/html'))) : '';
+    const txt = $('txt');
+    if (t === txt && !txt.hidden) {
+      const all = txt.selectionStart === 0 && txt.selectionEnd === txt.value.length && txt.value.length > 0;
+      if (!(isSample() || !txt.value.trim() || all)) return;      // ordinary editing paste
+    }
+    if (!data || !data.trim()) return;
+    e.preventDefault();
+    loadText(data, prefs.oAuto);
+  });
+
+  // keyboard
+  document.addEventListener('keydown', (e) => {
+    const t = e.target instanceof Element ? e.target : null;
+    const typing = t && t.closest('input, textarea, select, [contenteditable=""], [contenteditable="true"]');
+    if (e.key === 'Escape') { if (Ctl.mode !== 'idle') { e.preventDefault(); stopReading(); } return; }
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); haltAll(); Ctl.sig = ''; startReading(0); return; }
+    if (typing || e.ctrlKey || e.metaKey || e.altKey) return;
+    if (e.key === ' ' || e.code === 'Space') {
+      if (t && t.closest('button, a, summary')) return;
+      e.preventDefault();
+      togglePlay();
+    } else if (e.key === 'ArrowRight' && !$('reader').hidden) { e.preventDefault(); jumpTo(Ctl.cur + 1); }
+    else if (e.key === 'ArrowLeft' && !$('reader').hidden) { e.preventDefault(); jumpTo(Ctl.cur - 1); }
+  });
+
+  // transport
+  $('tPlay').addEventListener('click', togglePlay);
+  $('tStop').addEventListener('click', stopReading);
+  $('tPrev').addEventListener('click', () => jumpTo(Ctl.cur - 1));
+  $('tNext').addEventListener('click', () => jumpTo(Ctl.cur + 1));
+  $('tSave').addEventListener('click', saveWav);
+  $('tSpeed').addEventListener('change', () => {
+    prefs.speed = parseFloat($('tSpeed').value) || 1;
+    savePrefs();
+    Player.setRate(prefs.speed);
+    Browser.setRate();
+    updateMeta();
+  });
+
+  // engine + browser voice
+  $('engBrowser').addEventListener('click', () => setEngine('browser'));
+  $('engGemini').addEventListener('click', () => setEngine('gemini'));
+  $('bVoice').addEventListener('change', () => {
+    prefs.bVoice = $('bVoice').value;
+    savePrefs();
+    updateEngineTag();
+    if (Ctl.engine === 'browser' && Ctl.mode === 'playing') { Browser.pause(); Browser.resume(); }
+  });
+  $('bTest').addEventListener('click', () => {
+    if (!hasSpeech()) return;
+    if (Ctl.mode === 'playing' || Ctl.mode === 'loading') pauseReading();
+    Browser.stop();
+    const u = new SpeechSynthesisUtterance('สวัสดี นี่คือเสียงที่จะใช้อ่านข้อความให้ฟัง');
+    const v = currentBrowserVoice();
+    if (v) { u.voice = v; u.lang = v.lang; } else u.lang = 'th-TH';
+    u.rate = prefs.speed || 1;
+    setTimeout(() => speechSynthesis.speak(u), 80);
+  });
+
+  // gemini settings
+  $('gKey').addEventListener('input', () => { prefs.gKey = $('gKey').value.trim(); savePrefs(); setKeyState('', ''); });
+  $('gShow').addEventListener('click', () => {
+    const k = $('gKey'), show = k.type === 'password';
+    k.type = show ? 'text' : 'password';
+    $('gShow').setAttribute('aria-pressed', String(show));
+    $('gShow').setAttribute('aria-label', show ? 'ซ่อนคีย์' : 'แสดงคีย์');
+  });
+  $('gRemember').addEventListener('change', () => { prefs.gRemember = $('gRemember').checked; savePrefs(); });
+  $('gTestKey').addEventListener('click', testKey);
+  $('gModel').addEventListener('change', () => { prefs.gModel = $('gModel').value; savePrefs(); modelHint(); geminiCfgChanged(true); });
+  $('gVoice').addEventListener('change', () => { prefs.gVoice = $('gVoice').value; savePrefs(); updateEngineTag(); geminiCfgChanged(true); });
+  $('gLoadVoices').addEventListener('click', loadGeminiVoices);
+  $('gPreview').addEventListener('click', previewGemini);
+  $('gStyle').addEventListener('input', () => { prefs.gStyle = $('gStyle').value; savePrefs(); syncChips(); geminiCfgChanged(false); });
+  $('gStream').addEventListener('change', () => { prefs.gStream = $('gStream').checked; savePrefs(); geminiCfgChanged(false); });
+  $('gFallback').addEventListener('change', () => { prefs.gFallback = $('gFallback').checked; savePrefs(); });
+  for (const k of ['oMd', 'oEmoji', 'oLinks', 'oCode', 'oAuto']) {
+    $(k).addEventListener('change', () => { prefs[k] = $(k).checked; savePrefs(); updateMeta(); });
+  }
+  window.addEventListener('pagehide', () => { try { if (hasSpeech()) speechSynthesis.cancel(); } catch (e) {} });
+}
+init();
+</script>
+</body>
+</html>
